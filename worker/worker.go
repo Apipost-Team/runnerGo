@@ -26,7 +26,6 @@ func worker() {
 		if !ok {
 			return
 		}
-		fmt.Print(data)
 		summary.ResChanel <- runnerHttp.Do(data[0])
 	}
 }
