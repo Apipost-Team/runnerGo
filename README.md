@@ -22,7 +22,9 @@ Options:
 ## Super simple to use
 RunnerGo is designed to be the simplest way possible to make stress test. 
 
-```runnerGo -n 100 -r 2 -j 'https://echo.apipost.cn/json-har.json'```
+```
+./runnerGo -n 100 -r 2 -j 'https://echo.apipost.cn/json-har.json'
+```
 
 ## Examples
 ```json
