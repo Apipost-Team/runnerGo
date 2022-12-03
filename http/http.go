@@ -259,7 +259,6 @@ func Do(harStruct HarRequestType) summary.Res {
 	}
 
 	for k, v := range runnerGoStruct.Headers {
-		fmt.Print(k, ":", v, "\n")
 		if strings.ToLower(k) == "host" {
 			req.Host = v
 		} else {
