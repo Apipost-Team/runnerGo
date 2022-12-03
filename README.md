@@ -9,7 +9,7 @@ RunnerGo is a develop tool similar to apache bench (ab).
 Options:
   -r  Rounds of request to run, total requests equal r * n
   -n  Number of simultaneous requests, 0<n<=5000, depends on machine performance
-  -j  Url of request har url, use " please
+  -j  Specify the har file path or URL for request, use " please
       eg: 
       -j 'https://echo.apipost.cn/json-har.json'
   -t  Specify the time (in milliseconds) to wait for requests to return a response, Default is 10
@@ -17,7 +17,7 @@ Options:
   -v  Displays the current RunnerGo version
 ```
 
-* 注意: -j 是实现发送的 har json路径，文件详细内容，可参照examples/file-har.json 和 examples/json-har.json
+* Note: -j Specify the har file path or URL for request. See examples/file-har.json / examples/json-har.json
 
 ## Super simple to use
 RunnerGo is designed to be the simplest way possible to make stress test. 
