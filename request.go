@@ -286,11 +286,13 @@ func main() {
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	client := HttpClients[rand.Intn(clientsN)]
 	response, err := client.Do(req)
+	fmt.Print("err", err, "\n")
 
 	if response != nil {
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			panic(err)
+			fmt.Print("err", err, "\n")
+			os.Exit(1)
 		}
 		// fmt.Println(response.Header)
 		fmt.Println(string(body), response.ContentLength)

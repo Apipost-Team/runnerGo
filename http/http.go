@@ -18,6 +18,7 @@ import (
 	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
+	// browser "github.com/EDDYCJY/fake-useragent"
 )
 
 // Part of the HAR JSON Data structure.
@@ -125,8 +126,8 @@ func Do(harStruct HarRequestType) summary.Res {
 	}
 
 	// 校验 method
-	if runnerGoStruct.Url == "" {
-		runnerGoStruct.Url = "GET"
+	if runnerGoStruct.Method == "" {
+		runnerGoStruct.Method = "GET"
 	}
 
 	// 校验 mode 并生成header+body
@@ -261,11 +262,17 @@ func Do(harStruct HarRequestType) summary.Res {
 	for k, v := range runnerGoStruct.Headers {
 		if strings.ToLower(k) == "host" {
 			req.Host = v
+		} else if strings.ToLower(k) == "user-agent" {
+			req.Header.Set("User-Agent", v)
 		} else {
 			req.Header.Set(k, v)
 		}
 	}
-	// req.Header.Set("User-Agent", browser.Random())
+
+	if len(req.Header["User-Agent"]) > 0 && req.Header["User-Agent"][0] == "" {
+		req.Header.Set("User-Agent", "Apipost/runtime (https://www.apipost.cn)")
+		// req.Header.Set("User-Agent", browser.Random())
+	}
 
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(info httptrace.DNSStartInfo) {
@@ -301,6 +308,10 @@ func Do(harStruct HarRequestType) summary.Res {
 	client := HttpClients[rand.Intn(clientsN)]
 	response, err := client.Do(req)
 
+	if err != nil {
+		fmt.Println(`{"code":"509", "message":"操作失败,稍后再试(509)"}`)
+		os.Exit(1)
+	}
 	tEnd := tools.Now()
 	if response != nil {
 		if response.ContentLength > -1 {
@@ -309,6 +320,7 @@ func Do(harStruct HarRequestType) summary.Res {
 			size = 0
 		}
 		code = response.StatusCode
+
 		bSize := 32 * 1024
 		if int64(bSize) > size {
 			if size < 1 {
