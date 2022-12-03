@@ -1,0 +1,585 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "WebInspector",
+      "version": "537.36"
+    },
+    "pages": [
+      {
+        "startedDateTime": "2022-12-01T20:05:13.105Z",
+        "id": "page_1",
+        "title": "https://www.runoob.com/try/try.php?filename=tryjquery_ajax_ajax",
+        "pageTimings": {
+          "onContentLoad": 282.02799998689443,
+          "onLoad": 1544.0640000160784
+        }
+      }
+    ],
+    "entries": [
+      {
+        "_fromCache": "memory",
+        "_initiator": {
+          "type": "script",
+          "stack": {
+            "callFrames": [
+              {
+                "functionName": "submitTryit",
+                "scriptId": "526",
+                "url": "https://www.runoob.com/try/try.php?filename=tryjquery_ajax_ajax",
+                "lineNumber": 214,
+                "columnNumber": 16
+              },
+              {
+                "functionName": "onclick",
+                "scriptId": "561",
+                "url": "https://www.runoob.com/try/try.php?filename=tryjquery_ajax_ajax",
+                "lineNumber": 81,
+                "columnNumber": 113
+              }
+            ]
+          }
+        },
+        "_priority": "High",
+        "_resourceType": "script",
+        "cache": {},
+        "connection": "91382",
+        "pageref": "page_1",
+        "request": {
+          "method": "GET",
+          "url": "https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js",
+          "httpVersion": "http/1.1",
+          "headers": [
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Google Chrome\";v=\"107\", \"Chromium\";v=\"107\", \"Not=A?Brand\";v=\"24\""
+            },
+            {
+              "name": "Referer",
+              "value": "https://www.runoob.com/"
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 0
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "http/1.1",
+          "headers": [
+            {
+              "name": "Ohc-File-Size",
+              "value": "32989"
+            },
+            {
+              "name": "X-Log",
+              "value": "X-Log"
+            },
+            {
+              "name": "Date",
+              "value": "Thu, 01 Dec 2022 17:15:09 GMT"
+            },
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            },
+            {
+              "name": "X-Svr",
+              "value": "IO"
+            },
+            {
+              "name": "Age",
+              "value": "18091"
+            },
+            {
+              "name": "X-Reqid",
+              "value": "K9sAAAAxNjP_Kd0W"
+            },
+            {
+              "name": "X-Cache-Status",
+              "value": "HIT"
+            },
+            {
+              "name": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "name": "Content-Transfer-Encoding",
+              "value": "binary"
+            },
+            {
+              "name": "Content-Disposition",
+              "value": "inline; filename=\"jquery.min.js\"; filename*=utf-8''jquery.min.js"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Ohc-Cache-HIT",
+              "value": "jncmcache107 [2], xaix145 [2]"
+            },
+            {
+              "name": "Last-Modified",
+              "value": "Tue, 16 Feb 2016 04:22:54 GMT"
+            },
+            {
+              "name": "Server",
+              "value": "JSP3/2.0.14"
+            },
+            {
+              "name": "ETag",
+              "value": "\"FuLzYD4jcR9kRvJ4pBHZBWI9ZSAe.gz\""
+            },
+            {
+              "name": "Access-Control-Max-Age",
+              "value": "2592000"
+            },
+            {
+              "name": "Vary",
+              "value": "Accept-Encoding"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/javascript"
+            },
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "name": "Access-Control-Expose-Headers",
+              "value": "X-Log, X-Reqid"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "public, max-age=31536000"
+            },
+            {
+              "name": "Accept-Ranges",
+              "value": "bytes"
+            },
+            {
+              "name": "X-Qiniu-Zone",
+              "value": "0"
+            },
+            {
+              "name": "Timing-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "name": "Ohc-Global-Saved-Time",
+              "value": "Thu, 01 Dec 2022 12:13:38 GMT"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 93100,
+            "mimeType": "application/javascript"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 0,
+          "_transferSize": 0,
+          "_error": null
+        },
+        "serverIPAddress": "127.0.0.1",
+        "startedDateTime": "2022-12-01T20:07:49.240Z",
+        "time": 0.1039999770000577,
+        "timings": {
+          "blocked": -1,
+          "dns": -1,
+          "ssl": -1,
+          "connect": -1,
+          "send": 0,
+          "wait": 0.08899997919797897,
+          "receive": 0.014999997802078724,
+          "_blocked_queueing": -1
+        }
+      },
+      {
+        "_initiator": {
+          "type": "script",
+          "stack": {
+            "callFrames": [
+              {
+                "functionName": "send",
+                "scriptId": "733",
+                "url": "https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js",
+                "lineNumber": 5,
+                "columnNumber": 18238
+              },
+              {
+                "functionName": "ajax",
+                "scriptId": "733",
+                "url": "https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js",
+                "lineNumber": 5,
+                "columnNumber": 13721
+              },
+              {
+                "functionName": "",
+                "scriptId": "734",
+                "url": "",
+                "lineNumber": 17,
+                "columnNumber": 2
+              },
+              {
+                "functionName": "dispatch",
+                "scriptId": "733",
+                "url": "https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js",
+                "lineNumber": 4,
+                "columnNumber": 14128
+              },
+              {
+                "functionName": "v.handle",
+                "scriptId": "733",
+                "url": "https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js",
+                "lineNumber": 4,
+                "columnNumber": 10865
+              }
+            ]
+          }
+        },
+        "_priority": "High",
+        "_resourceType": "xhr",
+        "cache": {},
+        "connection": "176921",
+        "pageref": "page_1",
+        "request": {
+          "method": "POST",
+          "url": "https://echo.apipost.cn/get.php?iddwww&dddd",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Accept",
+              "value": "*/*"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "zh-CN,zh;q=0.9"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Content-Length",
+              "value": "1005"
+            },
+            {
+              "name": "Content-Type",
+              "value": "multipart/form-data; boundary=----WebKitFormBoundaryt1AKSW2uGI9p3PPS"
+            },
+            {
+              "name": "Host",
+              "value": "echo.apipost.cn"
+            },
+            {
+              "name": "Origin",
+              "value": "https://www.runoob.com"
+            },
+            {
+              "name": "Referer",
+              "value": "https://www.runoob.com/"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "cross-site"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Google Chrome\";v=\"107\", \"Chromium\";v=\"107\", \"Not=A?Brand\";v=\"24\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            }
+          ],
+          "queryString": [
+            {
+              "name": "iddwww",
+              "value": ""
+            },
+            {
+              "name": "dddd",
+              "value": ""
+            }
+          ],
+          "cookies": [],
+          "headersSize": 670,
+          "bodySize": 279,
+          "postData": {
+            "mimeType": "multipart/form-data; boundary=----WebKitFormBoundaryt1AKSW2uGI9p3PPS",
+            "text": "------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"logo\"; filename=\"har.json\"\r\nContent-Type: text/x-sh\r\n\r\n\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\n标题\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS--\r\n",
+            "params": [
+              {
+                "name": "logo",
+                "type":"file",
+                "value": "@/Users/mhw/Downloads/har.json"
+              },
+              {
+                "name": "title",
+                "value": "标题"
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "AbCd",
+              "value": "AAhh"
+            },
+            {
+              "name": "Access-Control-Allow-Headers",
+              "value": "Content-Type,Content-Length,Accept-Encoding,X-Requested-with, Origin,Authorization"
+            },
+            {
+              "name": "Access-Control-Allow-Method",
+              "value": "POST,GET,PUT,DELETE,OPTIONS,OPTION"
+            },
+            {
+              "name": "Access-Control-Allow-Methods",
+              "value": "POST,GET,PUT,DELETE,OPTIONS,OPTION"
+            },
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "name": "Connection",
+              "value": "Keep-Alive"
+            },
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            },
+            {
+              "name": "Content-Length",
+              "value": "630"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json;charset=utf-8"
+            },
+            {
+              "name": "Date",
+              "value": "Thu, 01 Dec 2022 20:07:52 GMT"
+            },
+            {
+              "name": "Keep-Alive",
+              "value": "timeout=5, max=100"
+            },
+            {
+              "name": "Server",
+              "value": "Apache"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test1-folder=B; expires=Thu, 01-Dec-2022 21:07:52 GMT; Max-Age=3600; path=/echo; domain=echo.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test1=0; expires=Thu, 01-Dec-2022 21:07:52 GMT; Max-Age=3600; path=/; domain=echo.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test2=0; expires=Thu, 01-Dec-2022 21:07:52 GMT; Max-Age=3600; path=/; domain=echo.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test3=%25E4%25BD%25A0%25E5%25A5%25BD; expires=Thu, 01-Dec-2022 21:07:52 GMT; Max-Age=3600; path=/; domain=echo.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test4=%E4%BD%A0%E5%A5%BD%3D%3D%3D; expires=Thu, 01-Dec-2022 21:07:52 GMT; Max-Age=3600; path=/; domain=.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test5=nihao; expires=Thu, 01-Dec-2022 21:07:52 GMT; Max-Age=3600; path=/; domain=apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test6=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=echo.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test7=0; expires=Thu, 01-Dec-2022 19:37:52 GMT; Max-Age=-1800; path=/; domain=echo.apipost.cn"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "cookie-test8=renge%3D%3D%3B-%2F%3F"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "httponly-cookie=httponly-value; HttpOnly"
+            },
+            {
+              "name": "Strict-Transport-Security",
+              "value": "max-age=63072000; includeSubdomains; preload"
+            },
+            {
+              "name": "Vary",
+              "value": "Accept-Encoding"
+            },
+            {
+              "name": "X-Powered-By",
+              "value": "PHP/7.1.3"
+            }
+          ],
+          "cookies": [
+            {
+              "name": "cookie-test1-folder",
+              "value": "B",
+              "path": "/echo",
+              "domain": "echo.apipost.cn",
+              "expires": "2022-12-01T21:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test1",
+              "value": "0",
+              "path": "/",
+              "domain": "echo.apipost.cn",
+              "expires": "2022-12-01T21:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test2",
+              "value": "0",
+              "path": "/",
+              "domain": "echo.apipost.cn",
+              "expires": "2022-12-01T21:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test3",
+              "value": "%25E4%25BD%25A0%25E5%25A5%25BD",
+              "path": "/",
+              "domain": "echo.apipost.cn",
+              "expires": "2022-12-01T21:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test4",
+              "value": "%E4%BD%A0%E5%A5%BD%3D%3D%3D",
+              "path": "/",
+              "domain": ".apipost.cn",
+              "expires": "2022-12-01T21:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test5",
+              "value": "nihao",
+              "path": "/",
+              "domain": "apipost.cn",
+              "expires": "2022-12-01T21:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test6",
+              "value": "deleted",
+              "path": "/",
+              "domain": "echo.apipost.cn",
+              "expires": "2022-12-01T20:07:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test7",
+              "value": "0",
+              "path": "/",
+              "domain": "echo.apipost.cn",
+              "expires": "2022-12-01T19:37:52.562Z",
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "cookie-test8",
+              "value": "renge%3D%3D%3B-%2F%3F",
+              "domain": "echo.apipost.cn",
+              "expires": null,
+              "httpOnly": false,
+              "secure": false
+            },
+            {
+              "name": "httponly-cookie",
+              "value": "httponly-value",
+              "domain": "echo.apipost.cn",
+              "expires": null,
+              "httpOnly": true,
+              "secure": false
+            }
+          ],
+          "content": {
+            "size": 997,
+            "mimeType": "application/json",
+            "compression": 367
+          },
+          "redirectURL": "",
+          "headersSize": 1700,
+          "bodySize": 630,
+          "_transferSize": 2330,
+          "_error": null
+        },
+        "serverIPAddress": "127.0.0.1",
+        "startedDateTime": "2022-12-01T20:07:52.560Z",
+        "time": 207.9900000244379,
+        "timings": {
+          "blocked": 3.2429999107569456,
+          "dns": -1,
+          "ssl": 40.84,
+          "connect": 95.354,
+          "send": 1.7639999999999958,
+          "wait": 106.20800000369549,
+          "receive": 1.4210001099854708,
+          "_blocked_queueing": 2.2509999107569456,
+          "_blocked_proxy": 0.389
+        }
+      }
+    ]
+  }
+}
