@@ -266,23 +266,7 @@ func Do(harStruct HarRequestType) summary.Res {
 			req.Header.Set(k, v)
 		}
 	}
-	// req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(bodydata)))
-	// if err != nil {
-	// 	return summary.Res{}
-	// }
-	// // fmt.Println(req)
-	// req.Header.Set("Accept", "*/*")
-	// req.Header.Set("Connection", "keep-alive")
-	// req.Header.Set("Accept-Encoding", "gzip, deflate")
 	// req.Header.Set("User-Agent", browser.Random())
-	// // req.Header.Set("User-Agent", "Apipostruntime/")
-	// for k, v := range headers {
-	// 	if strings.ToLower(k) == "host" {
-	// 		req.Host = v
-	// 	} else {
-	// 		req.Header.Set(k, v)
-	// 	}
-	// }
 
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(info httptrace.DNSStartInfo) {
@@ -361,20 +345,3 @@ func Do(harStruct HarRequestType) summary.Res {
 	}
 
 }
-
-// func Head(url, data string, headers map[string]string) summary.Res {
-// 	return do(url, "HEAD", data, headers)
-// }
-
-// func Get(url, data string, headers map[string]string) summary.Res {
-// 	return do(url, "GET", data, headers)
-// }
-// func Post(url, data string, headers map[string]string) summary.Res {
-// 	return do(url, "POST", data, headers)
-// }
-// func Put(url, data string, headers map[string]string) summary.Res {
-// 	return do(url, "PUT", data, headers)
-// }
-// func Delete(url, data string, headers map[string]string) summary.Res {
-// 	return do(url, "DELETE", data, headers)
-// }
