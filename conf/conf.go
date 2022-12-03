@@ -13,7 +13,7 @@ var usage = `Usage: runnerGo [Options]
 
 Some Options:
   -r  Rounds of request to run, total requests equal r * n
-  -n  Number of simultaneous requests, 0<n<=900, depends on machine performance
+  -n  Number of simultaneous requests, 0<n<=5000, depends on machine performance
   -j  Url of request har url, use " please
       eg: 
       -j 'https://echo.apipost.cn/json-har.json'

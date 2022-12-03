@@ -1,28 +1,30 @@
 
 
-runnerGo 是一个可以帮助你获取http服务器压力测试性能指标的工具，有点像Apache的ab，不同的是，它可以帮你发送携带不同参数的请求，这样你就可以便捷地重放线上的真实请求。
+RunnerGo is a develop tool similar to apache bench (ab).
 
-## 参数说明
+## Usage
 * runnerGo -h
 
 ```
 Options:
   -r  Rounds of request to run, total requests equal r * n
-  -n  Number of simultaneous requests, 0<n<=900, depends on machine performance
+  -n  Number of simultaneous requests, 0<n<=5000, depends on machine performance
   -j  Url of request har url, use " please
       eg: 
       -j 'https://echo.apipost.cn/json-har.json'
-  -t  Timeout for each request in seconds, Default is 10
-  -h  This help
-  -v  Show verison
+  -t  Specify the time (in milliseconds) to wait for requests to return a response, Default is 10
+  -h  Show command line help, including a list of options, and sample use cases.
+  -v  Displays the current RunnerGo version
 ```
 
 * 注意: -j 是实现发送的 har json路径，文件详细内容，可参照examples/file-har.json 和 examples/json-har.json
 
-## 一些例子
+## Super simple to use
+RunnerGo is designed to be the simplest way possible to make stress test. 
+
 * 1: runnerGo -n 100 -r 2 -j https://echo.apipost.cn/json-har.json
 
-## 结果展示
+## Examples
 ```json
 {
     "Summary": {
