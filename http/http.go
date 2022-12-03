@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -121,8 +120,7 @@ func Do(harStruct HarRequestType) summary.Res {
 
 	// 校验 URL
 	if runnerGoStruct.Url == "" || (strings.ToLower(runnerGoStruct.Url)[:7] != "http://" && strings.ToLower(runnerGoStruct.Url)[:8] != "https://") {
-		fmt.Println(`{"code":"502", "message":"请输入正常的 URL(` + runnerGoStruct.Url + `)"}`)
-		os.Exit(1)
+		summary.ErrorPrint(`{"code":"502", "message":"请输入正常的 URL(` + runnerGoStruct.Url + `)"}`)
 	}
 
 	// 校验 method
@@ -151,30 +149,25 @@ func Do(harStruct HarRequestType) summary.Res {
 
 					fileInfo, e := os.Stat(filePath)
 					if e != nil {
-						fmt.Println(`{"code":"503", "message":"参数指定的文件路径不存在(` + filePath + `)"}`)
-						os.Exit(1)
+						summary.ErrorPrint(`{"code":"503", "message":"参数指定的文件路径不存在(` + filePath + `)"}`)
 					}
 					if fileInfo.IsDir() {
-						fmt.Println(`{"code":"504", "message":"参数指定的路径是目录而不是一个文件(` + filePath + `)"}`)
-						os.Exit(1)
+						summary.ErrorPrint(`{"code":"504", "message":"参数指定的路径是目录而不是一个文件(` + filePath + `)"}`)
 					}
 
 					fileWriter, e := bodyWriter.CreateFormFile(v.Name, fileInfo.Name())
 					if e != nil {
-						fmt.Println(`{"code":"505", "message":"临时文件创建失败(` + filePath + `)"}`)
-						os.Exit(1)
+						summary.ErrorPrint(`{"code":"505", "message":"临时文件创建失败(` + e.Error() + `)"}`)
 					}
 
 					fileOpen, e := os.Open(filePath)
 					if e != nil {
-						fmt.Println(`{"code":"506", "message":"临时文件创建失败(` + filePath + `)"}`)
-						os.Exit(1)
+						summary.ErrorPrint(`{"code":"506", "message":"临时文件创建失败(` + e.Error() + `)"}`)
 					}
 					defer fileOpen.Close()
 					_, e = io.Copy(fileWriter, fileOpen)
 					if e != nil {
-						fmt.Println(`{"code":"507", "message":"临时文件创建失败(` + filePath + `)"}`)
-						os.Exit(1)
+						summary.ErrorPrint(`{"code":"507", "message":"临时文件创建失败(` + e.Error() + `)"}`)
 					}
 				} else {
 					bodyWriter.WriteField(v.Name, v.Value)
@@ -250,8 +243,7 @@ func Do(harStruct HarRequestType) summary.Res {
 	}
 
 	if newReqErr != nil {
-		fmt.Println(`{"code":"508", "message":"操作失败,稍后再试(508)"}`)
-		os.Exit(1)
+		summary.ErrorPrint(`{"code":"508", "message":"操作失败,稍后再试(` + string(newReqErr.Error()) + `)"}`)
 	}
 
 	// 设置请求头
@@ -309,9 +301,9 @@ func Do(harStruct HarRequestType) summary.Res {
 	response, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println(`{"code":"509", "message":"操作失败,稍后再试(509)"}`)
-		os.Exit(1)
+		summary.ErrorPrint(`{"code":"509", "message":"操作失败,稍后再试(` + string(err.Error()) + `)"}`)
 	}
+
 	tEnd := tools.Now()
 	if response != nil {
 		if response.ContentLength > -1 {

@@ -62,13 +62,16 @@ func Print(summaryData SummaryData) {
 
 	tmpl, err := template.New("test").Funcs(tmplFuncMap).Parse(htmlTemplate)
 	if err != nil {
-		fmt.Println(`{"code":"510", "message":"操作失败,稍后再试(510)"}`)
-		os.Exit(1)
+		ErrorPrint(`{"code":"510", "message":"操作失败,稍后再试(510)"}`)
 	}
 	err = tmpl.Execute(os.Stdout, summaryData)
 	if err != nil {
-		fmt.Println(`{"code":"511", "message":"操作失败,稍后再试(511)"}`)
-		os.Exit(1)
+		ErrorPrint(`{"code":"511", "message":"操作失败,稍后再试(511)"}`)
 	}
 
+}
+
+func ErrorPrint(err string) {
+	fmt.Fprintln(os.Stdout, err)
+	os.Exit(1)
 }

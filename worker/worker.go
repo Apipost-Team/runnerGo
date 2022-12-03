@@ -2,10 +2,8 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -34,15 +32,13 @@ func addTask() {
 	// 根据URL获取资源
 	res, err := http.Get(config.HarFile)
 	if err != nil {
-		fmt.Println(`{"code":"500", "message":"指定 URL 无法访问"}`)
-		os.Exit(1)
+		summary.ErrorPrint(`{"code":"500", "message":"指定 URL 无法访问(` + string(err.Error()) + `)"}`)
 	}
 
 	// 读取资源数据 body: []byte
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(`{"code":"501", "message":"指定 URL 的 JSON 数据格式不符合规范"}`)
-		os.Exit(1)
+		summary.ErrorPrint(`{"code":"501", "message":"指定 URL 的 JSON 数据格式不符合规范(` + string(err.Error()) + `)"}`)
 	}
 
 	// 解析 har 结构
