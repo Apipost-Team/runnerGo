@@ -2,51 +2,32 @@ package worker
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/Apipost-Team/runnerGo/conf"
 	runnerHttp "github.com/Apipost-Team/runnerGo/http"
 	"github.com/Apipost-Team/runnerGo/summary"
+	"golang.org/x/net/websocket"
 )
 
-var (
-	rwg       sync.WaitGroup
-	config    = conf.Conf
-	urlChanel = make(chan [1]runnerHttp.HarRequestType, 30000)
-)
+type InputData struct {
+	C    int `json:"c"`
+	N    int `json:"n"`
+	Data runnerHttp.HarRequestType
+}
 
-func worker() {
-	for { // for 循环逐个执行 URL
-		data, ok := <-urlChanel
-		if !ok {
-			return
-		}
-		summary.ResChanel <- runnerHttp.Do(data[0])
+// 结果反馈
+func SendResult(msg string, ws *websocket.Conn) {
+	if err := websocket.Message.Send(ws, msg); err != nil {
+		panic(err)
 	}
 }
 
-func addTask() {
-	// 根据URL获取资源
-	res, err := http.Get(config.HarFile)
-	if err != nil {
-		summary.ErrorPrint(`{"code":"500", "message":"指定 URL 无法访问(` + string(err.Error()) + `)"}`)
-	}
-
-	// 读取资源数据 body: []byte
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		summary.ErrorPrint(`{"code":"501", "message":"指定 URL 的 JSON 数据格式不符合规范(` + string(err.Error()) + `)"}`)
-	}
-
-	// 解析 har 结构
-	var harStruct runnerHttp.HarRequestType
-	json.Unmarshal([]byte(string(body)), &harStruct)
-
-	for i := 0; i < config.UrlNum; i++ {
-		urlChanel <- [1]runnerHttp.HarRequestType{harStruct}
+// 添加任务
+func AddTask(data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarRequestType) {
+	for i := 0; i < conf.Conf.UrlNum; i++ {
+		urlChanel <- data
 	}
 
 	for {
@@ -58,17 +39,47 @@ func addTask() {
 	}
 }
 
-func StartWork() {
+// 执行请求任务
+func worker(urlChanel chan runnerHttp.HarRequestType) {
+	for { // for 循环逐个执行 URL
+		data, ok := <-urlChanel
+		if !ok {
+			return
+		}
+		summary.ResChanel <- runnerHttp.Do(data)
+	}
+}
+
+// 开始任务
+func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
+	var rwg sync.WaitGroup
+	var urlChanel = make(chan runnerHttp.HarRequestType)
+	summary.ResChanel = make(chan summary.Res)
+
 	rwg.Add(1)
-	go addTask()
-	go func() {
-		summary.HandleRes()
-		rwg.Done()
-	}()
-	for index := 0; index < config.N; index++ {
+
+	// 添加任务
+	go AddTask(data, urlChanel)
+
+	// 并发消费 请求
+	for i := 0; i < conf.Conf.C; i++ {
 		go func() {
-			worker()
+			worker(urlChanel)
 		}()
 	}
+
+	// 处理数据
+	go func() {
+		res := summary.HandleRes()
+		jsonRes, err := json.Marshal(res)
+
+		if err != nil {
+			panic(err)
+		}
+
+		SendResult(string(jsonRes), ws)
+		rwg.Done()
+	}()
+
 	rwg.Wait()
 }

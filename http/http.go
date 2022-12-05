@@ -20,15 +20,11 @@ import (
 	// browser "github.com/EDDYCJY/fake-useragent"
 )
 
-// Part of the HAR JSON Data structure.
-// The header of a HTTP request or response is an array of name-value Tuples.
 type harHeaderType struct {
 	Name  string
 	Value string
 }
 
-// Part of the HAR JSON Data structure.
-// The information stored for one cookie.
 type harCookieType struct {
 	Name     string
 	Value    string
@@ -55,7 +51,7 @@ type postDataType struct {
 }
 
 type HarRequestType struct {
-	Method      string //[5]string{"GET", "POST", "PUT", "DELETE", "HEAD"}
+	Method      string
 	Url         string
 	Mode        string
 	HttpVersion string
@@ -81,7 +77,6 @@ const (
 
 var (
 	HttpClients []*http.Client
-	config      = conf.Conf
 )
 
 func init() {
@@ -93,12 +88,12 @@ func init() {
 func creteHttpClient() *http.Client {
 	client := &http.Client{
 		Transport: &http.Transport{
-			MaxConnsPerHost:     config.N/clientsN + 128,
-			MaxIdleConnsPerHost: config.N/clientsN + 128,
+			MaxConnsPerHost:     conf.Conf.C/clientsN + 128,
+			MaxIdleConnsPerHost: conf.Conf.C/clientsN + 128,
 			DisableKeepAlives:   false,
 			DisableCompression:  false,
 		},
-		Timeout: time.Duration(config.TimeOut) * time.Second,
+		Timeout: time.Duration(conf.Conf.TimeOut) * time.Second,
 	}
 	return client
 }
@@ -261,7 +256,7 @@ func Do(harStruct HarRequestType) summary.Res {
 		}
 	}
 
-	if len(req.Header["User-Agent"]) > 0 && req.Header["User-Agent"][0] == "" {
+	if len(req.Header["User-Agent"]) == 0 || (len(req.Header["User-Agent"]) > 0 && req.Header["User-Agent"][0] == "") {
 		req.Header.Set("User-Agent", "Apipost/runtime (https://www.apipost.cn)")
 		// req.Header.Set("User-Agent", browser.Random())
 	}
@@ -311,6 +306,15 @@ func Do(harStruct HarRequestType) summary.Res {
 		} else {
 			size = 0
 		}
+
+		if response.ContentLength < 0 {
+			body, err := ioutil.ReadAll(response.Body)
+
+			if err == nil {
+				size = int64(len(body))
+			}
+		}
+
 		code = response.StatusCode
 
 		bSize := 32 * 1024
@@ -321,8 +325,7 @@ func Do(harStruct HarRequestType) summary.Res {
 				bSize = int(size)
 			}
 		}
-		buf := make([]byte, bSize)
-		io.CopyBuffer(ioutil.Discard, response.Body, buf)
+
 		response.Body.Close()
 	} else {
 		code = 503

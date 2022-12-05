@@ -1,33 +1,21 @@
 package summary
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
 	"sync"
+
+	// "github.com/Apipost-Team/runnerGo/http"
 
 	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/tools"
 )
 
 var (
-	AnalysisData  sync.Map
-	ResChanel     = make(chan Res, 50000)
-	RunOverSignal = make(chan int, 1)
-
-	codeDetail  = make(map[int]int)
-	summaryData = SummaryData{
-		CodeDetail:        make(map[string]int),
-		WaitingTimeDetail: make(map[string]int),
-		MinConn:           float64(config.TimeOut),
-		MinDNS:            float64(config.TimeOut),
-		MinDelay:          float64(config.TimeOut),
-		MinReq:            float64(config.TimeOut),
-		MinUseTime:        float64(config.TimeOut),
-		MinRes:            float64(config.TimeOut),
-	}
-	config    = conf.Conf
-	waitTimes = make([]float64, 0, config.UrlNum)
+	AnalysisData sync.Map
+	ResChanel    = make(chan Res)
 )
 
 type Res struct {
@@ -75,18 +63,35 @@ type SummaryData struct {
 	MinRes   float64
 }
 
-func HandleRes() {
+func HandleRes() SummaryData {
+	var (
+		// RunOverSignal = make(chan int, 1)
+		codeDetail  = make(map[int]int)
+		summaryData = SummaryData{
+			CodeDetail:        make(map[string]int),
+			WaitingTimeDetail: make(map[string]int),
+			MinConn:           float64(conf.Conf.TimeOut),
+			MinDNS:            float64(conf.Conf.TimeOut),
+			MinDelay:          float64(conf.Conf.TimeOut),
+			MinReq:            float64(conf.Conf.TimeOut),
+			MinUseTime:        float64(conf.Conf.TimeOut),
+			MinRes:            float64(conf.Conf.TimeOut),
+		}
+
+		waitTimes = make([]float64, 0, conf.Conf.UrlNum)
+	)
+
 	for {
 		res, ok := <-ResChanel
 		if !ok {
 			break
 		}
 
-		// fmt.Printf("%+v\n", res)
-
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
-		if summaryData.CompleteRequests == config.UrlNum {
+
+		fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-", res.Size)
+		if summaryData.CompleteRequests == conf.Conf.UrlNum {
 			close(ResChanel)
 		}
 		code := res.Code
@@ -95,8 +100,8 @@ func HandleRes() {
 		} else {
 			codeDetail[code] = 1
 		}
-		if config.EndTime < res.TimeStamp {
-			config.EndTime = res.TimeStamp
+		if conf.Conf.EndTime < res.TimeStamp {
+			conf.Conf.EndTime = res.TimeStamp
 		}
 		if code > 299 || code < 200 {
 			summaryData.FailedRequests++
@@ -127,21 +132,21 @@ func HandleRes() {
 
 	}
 
-	summaryData.AvgUseTime = tools.Decimal2(summaryData.AvgUseTime / float64(config.UrlNum))
-	summaryData.AvgConn = tools.Decimal2(summaryData.AvgConn / float64(config.UrlNum))
-	summaryData.AvgDNS = tools.Decimal2(summaryData.AvgDNS / float64(config.UrlNum))
-	summaryData.AvgDelay = tools.Decimal2(summaryData.AvgDelay / float64(config.UrlNum))
-	summaryData.AvgReq = tools.Decimal2(summaryData.AvgReq / float64(config.UrlNum))
-	summaryData.AvgRes = tools.Decimal2(summaryData.AvgRes / float64(config.UrlNum))
-	summaryData.AvgDataSize = summaryData.TotalDataSize / config.UrlNum
+	summaryData.AvgUseTime = tools.Decimal2(summaryData.AvgUseTime / float64(conf.Conf.UrlNum))
+	summaryData.AvgConn = tools.Decimal2(summaryData.AvgConn / float64(conf.Conf.UrlNum))
+	summaryData.AvgDNS = tools.Decimal2(summaryData.AvgDNS / float64(conf.Conf.UrlNum))
+	summaryData.AvgDelay = tools.Decimal2(summaryData.AvgDelay / float64(conf.Conf.UrlNum))
+	summaryData.AvgReq = tools.Decimal2(summaryData.AvgReq / float64(conf.Conf.UrlNum))
+	summaryData.AvgRes = tools.Decimal2(summaryData.AvgRes / float64(conf.Conf.UrlNum))
+	summaryData.AvgDataSize = summaryData.TotalDataSize / conf.Conf.UrlNum
 
 	for k, v := range codeDetail {
 		summaryData.CodeDetail[strconv.Itoa(k)] = v
 	}
 
-	t := (float64(config.EndTime-config.StartTime) / 10e8)
+	t := (float64(conf.Conf.EndTime-conf.Conf.StartTime) / 10e8)
 	summaryData.TimeToken = t
-	summaryData.RequestsPerSec = float64(config.UrlNum) / t
+	summaryData.RequestsPerSec = float64(conf.Conf.UrlNum) / t
 	summaryData.SuccessRequestsPerSec = float64(summaryData.SuccessRequests) / t
 	sort.Float64s(waitTimes)
 	waitTimesL := float64(len(waitTimes))
@@ -151,5 +156,6 @@ func HandleRes() {
 		summaryData.WaitingTimeDetail[tools.FloatToPercent(tps[i])] = int(waitTimes[int(waitTimesL*tps[i]-1)])
 	}
 
-	Print(summaryData)
+	// Print(summaryData)
+	return summaryData
 }
