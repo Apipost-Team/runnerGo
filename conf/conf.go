@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-
-	"github.com/Apipost-Team/runnerGo/tools"
 )
 
 var usage = `Usage: runnerGo [Options]
@@ -42,7 +40,7 @@ func arrangeOptions() {
 	}
 	help := flag.Bool("h", false, "")
 	version := flag.Bool("v", false, "")
-	timeout := flag.Int("t", 10, "")
+	timeout := flag.Int("t", 60, "")
 	flag.Parse()
 
 	if *help {
@@ -62,5 +60,4 @@ func init() {
 	if Conf.TimeOut <= 0 || Conf.TimeOut > 60 {
 		Conf.TimeOut = 60
 	}
-	Conf.StartTime = int(tools.GetNowUnixNano())
 }

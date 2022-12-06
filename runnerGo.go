@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Apipost-Team/runnerGo/conf"
+	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
 	"golang.org/x/net/websocket"
 )
@@ -30,6 +31,9 @@ func main() {
 			json.Unmarshal([]byte(string(body)), &bodyStruct)
 			conf.Conf.C = bodyStruct.C
 			conf.Conf.UrlNum = bodyStruct.C * bodyStruct.N
+
+			// 开始时间
+			conf.Conf.StartTime = int(tools.GetNowUnixNano())
 
 			// 开始压测
 			worker.StartWork(bodyStruct.Data, ws)
