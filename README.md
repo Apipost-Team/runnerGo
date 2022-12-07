@@ -9,7 +9,7 @@ RunnerGo is a develop tool similar to apache bench (ab).
 Options:
     -n 	requests     Number of requests to perform
     -c 	concurrency  Number of multiple requests to make at a time
-    -t  Timeout for each request in seconds, Default is 10
+    -t  Timeout for each request in seconds, Default is 60
     -h  This help
     -v  Show verison
 ```
