@@ -59,6 +59,11 @@ func main() {
 		}
 	}))
 
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	t, _ := template.ParseFiles("websocket.html")
+	// 	t.Execute(w, nil)
+	// })
+
 	if err := http.ListenAndServe(":10397", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

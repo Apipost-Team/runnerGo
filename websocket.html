@@ -1,73 +1,95 @@
 <!DOCTYPE html>
-
- <html>
+<html>
 
 <head>
-
-    <meta charset="utf-8"/>
-
-    <title>go测试socket</title>
-
+    <meta charset="utf-8" />
+    <title>单接口压测</title>
 </head>
 
 <body>
-
-    <script type="text/javascript">
-
-        var sock = null;
-
-        var wsuri = "ws://127.0.0.1:1234/websocket";
-
-        window.onload = function() {
-
-            console.log("onload");
-
-            sock = new WebSocket(wsuri);
-
-            sock.onopen = function() {
-
-                console.log("connected to " + wsuri);
-
-            }
-
-            sock.onclose = function(e) {
-
-                console.log("connection closed (" + e.code + ")");
-
-            }
-
-            sock.onmessage = function(e) {
-
-                console.log("message received: " + e.data);
-
-            }
-
-        };
-
-        function send() {
-
-            var msg = document.getElementById('message').value;
-
-            sock.send(msg);
-
-        };
-
-    </script>
-
-    <h1>WebSocket Echo Test</h1>
-
+    
+    <h1>单接口压测</h1>
     <form>
-
-        <p>
-
-            Message: <input id="message" type="text" value="Hello, world!">
-
+        <p> Paras: <textarea id="para" cols="80" rows="36" placeholder="压测参数 c 并发数 n 循环次数 data har 格式的request参数">{
+    "c": 100,
+    "n": 2,
+    "data": {
+        "method": "GET",
+        "url": "http://47.96.166.133/index.php",
+        "mode": "none",
+        "headers": [
+            {
+                "name": "Pragma",
+                "value": "no-cache"
+            },
+            {
+                "name": "Server",
+                "value": "yisu.com"
+            }
+        ],
+        "postData": {
+            "params": [
+                {
+                    "name": "logo",
+                    "type": "file",
+                    "value": "@/Users/mhw/Downloads/"
+                },
+                {
+                    "name": "title",
+                    "value": "标题"
+                }
+            ]
+        }
+    }
+}</textarea>
+<button onclick="send();" id="dobtn" type="button">压测</button>
+<textarea id="result" cols="80" rows="36" placeholder="压测结果"></textarea>
         </p>
-
     </form>
-
-    <button onclick="send();">Send Message</button>
-
+   
 </body>
+<script type="text/javascript">
 
+    var sock = null;
+
+    var wsuri = "ws://127.0.0.1:10397/websocket";
+
+    window.onload = function () {
+
+        console.log("onload");
+
+        sock = new WebSocket(wsuri);
+
+        sock.onopen = function () {
+
+            console.log("connected to " + wsuri);
+
+        }
+
+        sock.onclose = function (e) {
+
+            console.log("connection closed (" + e.code + ")");
+
+        }
+
+        sock.onmessage = function (e) {
+            document.getElementById("result").value = JSON.stringify(JSON.parse(e.data), "", "\t")
+            console.log("received: " + e.data);
+            document.getElementById("dobtn").disabled = ""
+            document.getElementById("dobtn").value = "压测"
+
+        }
+
+    };
+
+    function send() {
+        document.getElementById("dobtn").disabled = "disabled"
+        document.getElementById("dobtn").innerText = "压测中"
+        var msg = document.getElementById('para').value;
+
+        sock.send(msg);
+
+    };
+
+</script>
 </html>

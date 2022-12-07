@@ -22,22 +22,24 @@ RunnerGo is designed to be the simplest way possible to make stress test.
     "n": 2,
     "data": {
         "method": "POST",
-        "url": "https://echo.apipost.cn/get.php",
-        "httpVersion": "HTTP/1.1",
+        "url": "http://echo.apipost.com/get.php",
         "mode": "urlencoded",
-        "headers": [],
-        "queryString": [],
-        "cookies": [],
-        "headersSize": 670,
-        "bodySize": 279,
+        "headers": [
+            {
+                "name": "Pragma",
+                "value": "no-cache"
+            },
+            {
+                "name": "Server",
+                "value": "yisu.com"
+            }
+        ],
         "postData": {
-            "mimeType": "multipart/form-data; boundary=----WebKitFormBoundaryt1AKSW2uGI9p3PPS",
-            "text": "------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"logo\"; filename=\"har.json\"\r\nContent-Type: text/x-sh\r\n\r\n\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\n标题\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS--\r\n",
             "params": [
                 {
                     "name": "logo",
                     "type": "file",
-                    "value": "@/Users/mhw/Downloads/har.json"
+                    "value": "@/Users/mhw/Downloads/"
                 },
                 {
                     "name": "title",
