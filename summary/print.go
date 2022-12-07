@@ -1,9 +1,23 @@
 package summary
 
 import (
-	"fmt"
-	"os"
+	"strconv"
+
+	"golang.org/x/net/websocket"
 )
+
+// 结果反馈
+func SendResult(msg string, code int, ws *websocket.Conn) {
+	if code == 200 {
+		msg = `{"code":200, "message":"success", "data":` + msg + `}`
+	} else {
+		msg = `{"code":` + strconv.Itoa(code) + `, "message":"` + msg + `", "data":{}}`
+	}
+
+	if err := websocket.Message.Send(ws, msg); err != nil {
+		panic(err)
+	}
+}
 
 // var (
 // 	htmlTemplate = `{
@@ -69,7 +83,7 @@ import (
 
 // }
 
-func ErrorPrint(err string) {
-	// fmt.Fprintln(err)
-	fmt.Fprintln(os.Stdout, err)
-}
+// func ErrorPrint(err string) {
+// 	// fmt.Fprintln(err)
+// 	fmt.Fprintln(os.Stdout, err)
+// }

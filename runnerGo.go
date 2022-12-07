@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/Apipost-Team/runnerGo/conf"
+	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
 	"golang.org/x/net/websocket"
@@ -22,7 +22,8 @@ func main() {
 			//websocket接受信息
 
 			if err = websocket.Message.Receive(ws, &body); err != nil {
-				fmt.Println("receive failed:", err)
+				summary.SendResult(string(err.Error()), 500, ws)
+				// fmt.Println("receive failed:", err)
 				break
 			}
 			var bodyStruct worker.InputData
@@ -32,11 +33,15 @@ func main() {
 			conf.Conf.C = bodyStruct.C
 			conf.Conf.UrlNum = bodyStruct.C * bodyStruct.N
 
-			// 开始时间
-			conf.Conf.StartTime = int(tools.GetNowUnixNano())
+			if conf.Conf.UrlNum <= 0 {
+				summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
+			} else {
+				// 开始时间
+				conf.Conf.StartTime = int(tools.GetNowUnixNano())
 
-			// 开始压测
-			worker.StartWork(bodyStruct.Data, ws)
+				// 开始压测
+				worker.StartWork(bodyStruct.Data, ws)
+			}
 
 		}
 	}))

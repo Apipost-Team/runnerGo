@@ -90,7 +90,7 @@ func HandleRes() SummaryData {
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
-		fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-", res.Size)
+		fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-")
 		if summaryData.CompleteRequests == conf.Conf.UrlNum {
 			close(ResChanel)
 		}

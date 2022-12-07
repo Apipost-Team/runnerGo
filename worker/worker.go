@@ -17,13 +17,6 @@ type InputData struct {
 	Data runnerHttp.HarRequestType
 }
 
-// 结果反馈
-func SendResult(msg string, ws *websocket.Conn) {
-	if err := websocket.Message.Send(ws, msg); err != nil {
-		panic(err)
-	}
-}
-
 // 添加任务
 func AddTask(data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarRequestType) {
 	for i := 0; i < conf.Conf.UrlNum; i++ {
@@ -40,13 +33,13 @@ func AddTask(data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarReques
 }
 
 // 执行请求任务
-func worker(urlChanel chan runnerHttp.HarRequestType) {
+func worker(urlChanel chan runnerHttp.HarRequestType, ws *websocket.Conn) {
 	for { // for 循环逐个执行 URL
 		data, ok := <-urlChanel
 		if !ok {
 			return
 		}
-		summary.ResChanel <- runnerHttp.Do(data)
+		summary.ResChanel <- runnerHttp.Do(data, ws)
 	}
 }
 
@@ -64,7 +57,7 @@ func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
 	// 并发消费 请求
 	for i := 0; i < conf.Conf.C; i++ {
 		go func() {
-			worker(urlChanel)
+			worker(urlChanel, ws)
 		}()
 	}
 
@@ -77,7 +70,7 @@ func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
 			panic(err)
 		}
 
-		SendResult(string(jsonRes), ws)
+		summary.SendResult(string(jsonRes), 200, ws)
 		rwg.Done()
 	}()
 

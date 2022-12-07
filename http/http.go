@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -18,6 +17,7 @@ import (
 	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
+	"golang.org/x/net/websocket"
 	// browser "github.com/EDDYCJY/fake-useragent"
 )
 
@@ -99,7 +99,7 @@ func creteHttpClient() *http.Client {
 	return client
 }
 
-func Do(harStruct HarRequestType) summary.Res {
+func Do(harStruct HarRequestType, ws *websocket.Conn) summary.Res {
 	var code int
 	var size, tmpt int64
 	var dnsStart, connStart, respStart, reqStart, delayStart int64
@@ -116,7 +116,7 @@ func Do(harStruct HarRequestType) summary.Res {
 
 	// 校验 URL
 	if runnerGoStruct.Url == "" || (strings.ToLower(runnerGoStruct.Url)[:7] != "http://" && strings.ToLower(runnerGoStruct.Url)[:8] != "https://") {
-		summary.ErrorPrint(`{"code":"502", "message":"请输入正常的 URL(` + runnerGoStruct.Url + `)"}`)
+		summary.SendResult(`请输入正常的 URL(`+runnerGoStruct.Url+`)`, 502, ws)
 	}
 
 	// 校验 method
@@ -145,25 +145,25 @@ func Do(harStruct HarRequestType) summary.Res {
 
 					fileInfo, e := os.Stat(filePath)
 					if e != nil {
-						summary.ErrorPrint(`{"code":"503", "message":"参数指定的文件路径不存在(` + filePath + `)"}`)
+						summary.SendResult(`参数指定的文件路径不存在(`+filePath+`)`, 503, ws)
 					}
 					if fileInfo.IsDir() {
-						summary.ErrorPrint(`{"code":"504", "message":"参数指定的路径是目录而不是一个文件(` + filePath + `)"}`)
+						summary.SendResult(`参数指定的路径是目录而不是一个文件(`+filePath+`)`, 504, ws)
 					}
 
 					fileWriter, e := bodyWriter.CreateFormFile(v.Name, fileInfo.Name())
 					if e != nil {
-						summary.ErrorPrint(`{"code":"505", "message":"临时文件创建失败(` + e.Error() + `)"}`)
+						summary.SendResult(`临时文件创建失败(`+e.Error()+`)`, 505, ws)
 					}
 
 					fileOpen, e := os.Open(filePath)
 					if e != nil {
-						summary.ErrorPrint(`{"code":"506", "message":"临时文件创建失败(` + e.Error() + `)"}`)
+						summary.SendResult(`临时文件创建失败(`+e.Error()+`)`, 506, ws)
 					}
 					defer fileOpen.Close()
 					_, e = io.Copy(fileWriter, fileOpen)
 					if e != nil {
-						summary.ErrorPrint(`{"code":"507", "message":"临时文件创建失败(` + e.Error() + `)"}`)
+						summary.SendResult(`临时文件创建失败(`+e.Error()+`)`, 507, ws)
 					}
 				} else {
 					bodyWriter.WriteField(v.Name, v.Value)
@@ -239,7 +239,7 @@ func Do(harStruct HarRequestType) summary.Res {
 	}
 
 	if newReqErr != nil {
-		summary.ErrorPrint(`{"code":"508", "message":"操作失败,稍后再试(` + string(newReqErr.Error()) + `)"}`)
+		summary.SendResult(`操作失败,稍后再试(`+string(newReqErr.Error())+`)`, 508, ws)
 	}
 
 	// 设置请求头
@@ -296,13 +296,8 @@ func Do(harStruct HarRequestType) summary.Res {
 	client := HttpClients[rand.Intn(clientsN)]
 	response, err := client.Do(req)
 
-	if err != nil {
-		fmt.Println(response)
-		summary.ErrorPrint(`{"code":"509", "message":"操作失败,稍后再试(` + string(err.Error()) + `)"}`)
-	}
-
 	tEnd := tools.Now()
-	if response != nil {
+	if response != nil && err == nil {
 		if response.ContentLength > -1 {
 			size = response.ContentLength
 		} else {
