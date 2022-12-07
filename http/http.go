@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -296,6 +297,7 @@ func Do(harStruct HarRequestType) summary.Res {
 	response, err := client.Do(req)
 
 	if err != nil {
+		fmt.Println(response)
 		summary.ErrorPrint(`{"code":"509", "message":"操作失败,稍后再试(` + string(err.Error()) + `)"}`)
 	}
 
