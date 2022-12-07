@@ -16,12 +16,9 @@ func SendResult(msg string, code int, ws *websocket.Conn) {
 		msg = `{"code":` + strconv.Itoa(code) + `, "message":"` + msg + `", "data":{}, "C":` + strconv.Itoa(conf.Conf.C) + `}`
 	}
 
-	// if ws.IsServerConn() {
 	if err := websocket.Message.Send(ws, msg); err != nil {
 		fmt.Println(err)
-		// ws.Close()
 	}
-	// }
 
 	return
 }

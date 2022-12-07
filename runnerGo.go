@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
@@ -25,7 +26,8 @@ func main() {
 			//websocket接受信息
 
 			if err = websocket.Message.Receive(ws, &body); err != nil {
-				summary.SendResult(string(err.Error()), 500, ws)
+				ws.Close()
+				break
 			} else {
 				var bodyStruct worker.InputData
 
@@ -59,11 +61,12 @@ func main() {
 		}
 	}))
 
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	t, _ := template.ParseFiles("websocket.html")
-	// 	t.Execute(w, nil)
-	// })
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		t, _ := template.ParseFiles("websocket.html")
+		t.Execute(w, nil)
+	})
 
+	go worker.OpenUrl("http://127.0.0.1:10397/")
 	if err := http.ListenAndServe(":10397", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

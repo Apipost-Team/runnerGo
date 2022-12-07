@@ -8,7 +8,13 @@
 
 <body>
     
-    <h1>单接口压测</h1>
+    <h1>单接口压测</h1><a href="https://github.com/Apipost-Team/runnerGo" target="_blank">https://github.com/Apipost-Team/runnerGo</a>
+<pre>
+Options:
+    -n 	requests     Number of requests to perform
+    -c 	concurrency  Number of multiple requests to make at a time
+    -data  <a href="http://www.softwareishard.com/blog/har-12-spec/#request" target="_blank">HAR</a> format data for request
+</pre>
     <form>
         <p> Paras: <textarea id="para" cols="80" rows="36" placeholder="压测参数 c 并发数 n 循环次数 data har 格式的request参数">{
     "c": 100,
@@ -51,33 +57,23 @@
 <script type="text/javascript">
 
     var sock = null;
-
     var wsuri = "ws://127.0.0.1:10397/websocket";
 
     window.onload = function () {
-
-        console.log("onload");
-
         sock = new WebSocket(wsuri);
 
         sock.onopen = function () {
-
             console.log("connected to " + wsuri);
-
         }
 
         sock.onclose = function (e) {
-
             console.log("connection closed (" + e.code + ")");
-
         }
 
         sock.onmessage = function (e) {
             document.getElementById("result").value = JSON.stringify(JSON.parse(e.data), "", "\t")
-            console.log("received: " + e.data);
             document.getElementById("dobtn").disabled = ""
-            document.getElementById("dobtn").value = "压测"
-
+            document.getElementById("dobtn").innerText = "压测"
         }
 
     };
@@ -88,7 +84,6 @@
         var msg = document.getElementById('para').value;
 
         sock.send(msg);
-
     };
 
 </script>
