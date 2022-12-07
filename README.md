@@ -7,75 +7,94 @@ RunnerGo is a develop tool similar to apache bench (ab).
 
 ```
 Options:
-  -r  Rounds of request to run, total requests equal r * n
-  -n  Number of simultaneous requests, 0<n<=5000, depends on machine performance
-  -j  Specify the har file path or URL for request, use " please
-      eg: 
-      -j 'https://echo.apipost.cn/json-har.json'
-  -t  Specify the time (in milliseconds) to wait for requests to return a response, Default is 10
-  -h  Show command line help, including a list of options, and sample use cases.
-  -v  Displays the current RunnerGo version
+    -n 	requests     Number of requests to perform
+	-c 	concurrency  Number of multiple requests to make at a time
+	-t  Timeout for each request in seconds, Default is 10
+	-h  This help
+	-v  Show verison
 ```
-
-* Note: -j Specify the har file path or URL for request. See examples/file-har.json / examples/json-har.json
-
 ## Super simple to use
 RunnerGo is designed to be the simplest way possible to make stress test. 
 
-```
-./runnerGo -n 100 -r 2 -j 'https://echo.apipost.cn/json-har.json'
+```json
+{
+    "c": 2,
+    "n": 2,
+    "data": {
+        "method": "POST",
+        "url": "https://echo.apipost.cn/get.php",
+        "httpVersion": "HTTP/1.1",
+        "mode": "urlencoded",
+        "headers": [],
+        "queryString": [],
+        "cookies": [],
+        "headersSize": 670,
+        "bodySize": 279,
+        "postData": {
+            "mimeType": "multipart/form-data; boundary=----WebKitFormBoundaryt1AKSW2uGI9p3PPS",
+            "text": "------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"logo\"; filename=\"har.json\"\r\nContent-Type: text/x-sh\r\n\r\n\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\n标题\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS--\r\n",
+            "params": [
+                {
+                    "name": "logo",
+                    "type": "file",
+                    "value": "@/Users/mhw/Downloads/har.json"
+                },
+                {
+                    "name": "title",
+                    "value": "标题"
+                }
+            ]
+        }
+    }
+}
 ```
 
 ## Examples
 ```json
 {
-    "Summary": {
-        "CompleteRequests": 8,
+    "code": 200,
+    "message": "success",
+    "data": {
+        "CompleteRequests": 4,
         "FailedRequests": 0,
-        "TimeToken": 0.760136,
-        "TotalDataSize": 3728,
-        "AvgDataSize": 466,
-        "MaxUseTime": 312,
-        "MinUseTime": 10,
-        "AvgUseTime": 233,
-        "RequestsPerSec": 10.524432469979056,
-        "SuccessRequestsPerSec": 10.524432469979056
-    },
-    "WaitingTimeDetail": {
-        "10.00%": 105,
-        "25.00%": 122,
-        "50.00%": 239,
-        "75.00%": 295,
-        "90.00%": 301,
-        "95.00%": 301,
-        "99.00%": 301,
-        "99.90%": 301,
-        "99.99%": 301
-    },
-    "CodeDetail": {
-        "200": 8
-    },
-    "Times": {
-        "dns": {
-            "MinDNS": 0,
-            "AvgDNS": 1.375,
-            "MaxDNS": 3
+        "SuccessRequests": 4,
+        "TimeToken": 0.324641,
+        "TotalDataSize": 2028,
+        "AvgDataSize": 507,
+        "RequestsPerSec": 12.32130260811173,
+        "SuccessRequestsPerSec": 12.32130260811173,
+        "MinUseTime": 60,
+        "MaxUseTime": 249,
+        "AvgUseTime": 156.25,
+        "CodeDetail": {
+            "200": 4
         },
-        "conn": {
-            "MinConn": 0,
-            "AvgConn": 96.5,
-            "MaxConn": 139
+        "WaitingTimeDetail": {
+            "10.00%": 70,
+            "25.00%": 70,
+            "50.00%": 74,
+            "75.00%": 232,
+            "90.00%": 232,
+            "95.00%": 232,
+            "99.00%": 232,
+            "99.90%": 232,
+            "99.99%": 232
         },
-        "wait": {
-            "MinDelay": 10,
-            "AvgDelay": 136.25,
-            "MaxDelay": 173
-        },
-        "resp": {
-            "MinRes": 0,
-            "AvgRes": 0,
-            "MaxRes": 0
-        }
+        "AvgConn": 77.5,
+        "MaxConn": 158,
+        "MinConn": 0,
+        "AvgDNS": 30.5,
+        "MaxDNS": 61,
+        "MinDNS": 0,
+        "AvgReq": 0,
+        "MaxReq": 0,
+        "MinReq": 0,
+        "AvgDelay": 77.5,
+        "MaxDelay": 90,
+        "MinDelay": 60,
+        "AvgRes": 0,
+        "MaxRes": 0,
+        "MinRes": 0
     }
 }
 ```
