@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
@@ -11,6 +12,8 @@ import (
 	"github.com/Apipost-Team/runnerGo/worker"
 	"golang.org/x/net/websocket"
 )
+
+var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
 
 func main() {
 	//接受websocket的路由地址
@@ -31,8 +34,20 @@ func main() {
 				conf.Conf.C = bodyStruct.C
 				conf.Conf.UrlNum = bodyStruct.C * bodyStruct.N
 
+				isForbidden := false
+
+				for i := 0; i < len(urlsBlacklist); i++ {
+					if strings.Index(strings.ToLower(bodyStruct.Data.Url), urlsBlacklist[i]) > -1 {
+						isForbidden = true
+						goto gotofor
+					}
+				}
+
+			gotofor:
 				if conf.Conf.UrlNum <= 0 {
 					summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
+				} else if isForbidden {
+					summary.SendResult(`禁止请求的URL`, 301, ws)
 				} else {
 					// 开始时间
 					conf.Conf.StartTime = int(tools.GetNowUnixNano())
