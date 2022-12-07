@@ -1,7 +1,6 @@
 package summary
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -90,7 +89,7 @@ func HandleRes() SummaryData {
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
-		fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-")
+		// fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-")
 		if summaryData.CompleteRequests == conf.Conf.UrlNum {
 			close(ResChanel)
 		}
