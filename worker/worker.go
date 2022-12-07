@@ -67,10 +67,11 @@ func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
 		jsonRes, err := json.Marshal(res)
 
 		if err != nil {
-			panic(err)
+			summary.SendResult(string(err.Error()), 503, ws)
+		} else {
+			summary.SendResult(string(jsonRes), 200, ws)
 		}
 
-		summary.SendResult(string(jsonRes), 200, ws)
 		rwg.Done()
 	}()
 

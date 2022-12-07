@@ -23,26 +23,24 @@ func main() {
 
 			if err = websocket.Message.Receive(ws, &body); err != nil {
 				summary.SendResult(string(err.Error()), 500, ws)
-				// fmt.Println("receive failed:", err)
-				break
-			}
-			var bodyStruct worker.InputData
-
-			// 解析 har 结构
-			json.Unmarshal([]byte(string(body)), &bodyStruct)
-			conf.Conf.C = bodyStruct.C
-			conf.Conf.UrlNum = bodyStruct.C * bodyStruct.N
-
-			if conf.Conf.UrlNum <= 0 {
-				summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
 			} else {
-				// 开始时间
-				conf.Conf.StartTime = int(tools.GetNowUnixNano())
+				var bodyStruct worker.InputData
 
-				// 开始压测
-				worker.StartWork(bodyStruct.Data, ws)
+				// 解析 har 结构
+				json.Unmarshal([]byte(string(body)), &bodyStruct)
+				conf.Conf.C = bodyStruct.C
+				conf.Conf.UrlNum = bodyStruct.C * bodyStruct.N
+
+				if conf.Conf.UrlNum <= 0 {
+					summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
+				} else {
+					// 开始时间
+					conf.Conf.StartTime = int(tools.GetNowUnixNano())
+
+					// 开始压测
+					worker.StartWork(bodyStruct.Data, ws)
+				}
 			}
-
 		}
 	}))
 

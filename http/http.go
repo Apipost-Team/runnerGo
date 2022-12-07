@@ -116,7 +116,7 @@ func Do(harStruct HarRequestType, ws *websocket.Conn) summary.Res {
 
 	// 校验 URL
 	if runnerGoStruct.Url == "" || (strings.ToLower(runnerGoStruct.Url)[:7] != "http://" && strings.ToLower(runnerGoStruct.Url)[:8] != "https://") {
-		summary.SendResult(`请输入正常的 URL(`+runnerGoStruct.Url+`)`, 502, ws)
+		runnerGoStruct.Url = "http://" + runnerGoStruct.Url
 	}
 
 	// 校验 method
@@ -235,112 +235,122 @@ func Do(harStruct HarRequestType, ws *websocket.Conn) summary.Res {
 	}
 
 	if newReqErr != nil {
-		summary.SendResult(`操作失败,稍后再试(`+string(newReqErr.Error())+`)`, 508, ws)
-	}
-
-	// 设置请求头
-	for _, v := range harStruct.Headers {
-		runnerGoStruct.Headers[v.Name] = v.Value
-	}
-
-	for k, v := range runnerGoStruct.Headers {
-		if strings.ToLower(k) == "host" {
-			req.Host = v
-		} else if strings.ToLower(k) == "user-agent" {
-			req.Header.Set("User-Agent", v)
-		} else {
-			req.Header.Set(k, v)
+		return summary.Res{
+			Size:         0,
+			TimeStamp:    int(tools.Now().UnixNano()),
+			TotalUseTime: float64(0),
+			Code:         500,
+			ConnTime:     float64(0),
+			DNSTime:      float64(0),
+			ReqTime:      float64(0),
+			DelayTime:    float64(0),
+			ResTime:      float64(0),
 		}
-	}
-
-	if len(req.Header["User-Agent"]) == 0 || (len(req.Header["User-Agent"]) > 0 && req.Header["User-Agent"][0] == "") {
-		req.Header.Set("User-Agent", "Apipost/runtime (https://www.apipost.cn)")
-		// req.Header.Set("User-Agent", browser.Random())
-	}
-
-	trace := &httptrace.ClientTrace{
-		DNSStart: func(info httptrace.DNSStartInfo) {
-			dnsStart = tools.GetNowUnixNano()
-		},
-		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
-			dnsDuration = tools.GetNowUnixNano() - dnsStart
-		},
-		GetConn: func(h string) {
-			connStart = tools.GetNowUnixNano()
-		},
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			tmpt = tools.GetNowUnixNano()
-			if !connInfo.Reused {
-				connDuration = tmpt - connStart
-			}
-			reqStart = tmpt
-		},
-		WroteRequest: func(w httptrace.WroteRequestInfo) {
-			tmpt = tools.GetNowUnixNano()
-			reqDuration = tmpt - reqStart
-			delayStart = tmpt
-		},
-		GotFirstResponseByte: func() {
-			tmpt = tools.GetNowUnixNano()
-			delayDuration = tmpt - delayStart
-			respStart = tmpt
-		},
-	}
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-	tStart := tools.GetNowUnixNano()
-
-	client := HttpClients[rand.Intn(clientsN)]
-	response, err := client.Do(req)
-
-	tEnd := tools.Now()
-	if response != nil && err == nil {
-		if response.ContentLength > -1 {
-			size = response.ContentLength
-		} else {
-			size = 0
-		}
-
-		if response.ContentLength < 0 {
-			body, err := ioutil.ReadAll(response.Body)
-
-			if err == nil {
-				size = int64(len(body))
-			}
-		}
-
-		code = response.StatusCode
-
-		bSize := 32 * 1024
-		if int64(bSize) > size {
-			if size < 1 {
-				bSize = 1
-			} else {
-				bSize = int(size)
-			}
-		}
-
-		response.Body.Close()
 	} else {
-		code = 503
-		if err, ok := err.(*netulr.Error); ok {
-			if err.Timeout() {
-				code = 504
+
+		// 设置请求头
+		for _, v := range harStruct.Headers {
+			runnerGoStruct.Headers[v.Name] = v.Value
+		}
+
+		for k, v := range runnerGoStruct.Headers {
+			if strings.ToLower(k) == "host" {
+				req.Host = v
+			} else if strings.ToLower(k) == "user-agent" {
+				req.Header.Set("User-Agent", v)
+			} else {
+				req.Header.Set(k, v)
 			}
 		}
+
+		if len(req.Header["User-Agent"]) == 0 || (len(req.Header["User-Agent"]) > 0 && req.Header["User-Agent"][0] == "") {
+			req.Header.Set("User-Agent", "Apipost/runtime (https://www.apipost.cn)")
+			// req.Header.Set("User-Agent", browser.Random())
+		}
+
+		trace := &httptrace.ClientTrace{
+			DNSStart: func(info httptrace.DNSStartInfo) {
+				dnsStart = tools.GetNowUnixNano()
+			},
+			DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+				dnsDuration = tools.GetNowUnixNano() - dnsStart
+			},
+			GetConn: func(h string) {
+				connStart = tools.GetNowUnixNano()
+			},
+			GotConn: func(connInfo httptrace.GotConnInfo) {
+				tmpt = tools.GetNowUnixNano()
+				if !connInfo.Reused {
+					connDuration = tmpt - connStart
+				}
+				reqStart = tmpt
+			},
+			WroteRequest: func(w httptrace.WroteRequestInfo) {
+				tmpt = tools.GetNowUnixNano()
+				reqDuration = tmpt - reqStart
+				delayStart = tmpt
+			},
+			GotFirstResponseByte: func() {
+				tmpt = tools.GetNowUnixNano()
+				delayDuration = tmpt - delayStart
+				respStart = tmpt
+			},
+		}
+		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+		tStart := tools.GetNowUnixNano()
+
+		client := HttpClients[rand.Intn(clientsN)]
+		response, err := client.Do(req)
+
+		tEnd := tools.Now()
+		if response != nil && err == nil {
+			if response.ContentLength > -1 {
+				size = response.ContentLength
+			} else {
+				size = 0
+			}
+
+			if response.ContentLength < 0 {
+				body, err := ioutil.ReadAll(response.Body)
+
+				if err == nil {
+					size = int64(len(body))
+				}
+			}
+
+			code = response.StatusCode
+
+			bSize := 32 * 1024
+			if int64(bSize) > size {
+				if size < 1 {
+					bSize = 1
+				} else {
+					bSize = int(size)
+				}
+			}
+
+			response.Body.Close()
+		} else {
+			code = 503
+			if err, ok := err.(*netulr.Error); ok {
+				if err.Timeout() {
+					code = 504
+				}
+			}
+		}
+
+		respDuration = tEnd.UnixNano() - respStart
+
+		return summary.Res{
+			Size:         int(size),
+			TimeStamp:    int(tEnd.UnixNano()),
+			TotalUseTime: float64((tEnd.UnixNano() - tStart) / 10e5),
+			Code:         code,
+			ConnTime:     float64(connDuration / 10e5),
+			DNSTime:      float64(dnsDuration / 10e5),
+			ReqTime:      float64(reqDuration / 10e5),
+			DelayTime:    float64(delayDuration / 10e5),
+			ResTime:      float64(respDuration / 10e5),
+		}
 	}
-
-	respDuration = tEnd.UnixNano() - respStart
-
-	return summary.Res{
-		Size:         int(size),
-		TimeStamp:    int(tEnd.UnixNano()),
-		TotalUseTime: float64((tEnd.UnixNano() - tStart) / 10e5),
-		Code:         code,
-		ConnTime:     float64(connDuration / 10e5),
-		DNSTime:      float64(dnsDuration / 10e5),
-		ReqTime:      float64(reqDuration / 10e5),
-		DelayTime:    float64(delayDuration / 10e5),
-		ResTime:      float64(respDuration / 10e5),
-	}
-
 }
