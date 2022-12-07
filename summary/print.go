@@ -17,4 +17,6 @@ func SendResult(msg string, code int, ws *websocket.Conn) {
 	if err := websocket.Message.Send(ws, msg); err != nil {
 		panic(err)
 	}
+
+	return
 }

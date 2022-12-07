@@ -138,38 +138,34 @@ func Do(harStruct HarRequestType, ws *websocket.Conn) summary.Res {
 			v.Name = strings.TrimSpace(v.Name)
 
 			if v.Name != "" {
-				isEmptyBody = false
 				if strings.ToLower(strings.TrimSpace(v.Type)) == "file" && strings.TrimSpace(v.Value)[:1] == "@" {
 					v.Value = strings.TrimSpace(v.Value)
 					filePath := v.Value[1:]
 
 					fileInfo, e := os.Stat(filePath)
-					if e != nil {
-						summary.SendResult(`参数指定的文件路径不存在(`+filePath+`)`, 503, ws)
-					}
-					if fileInfo.IsDir() {
-						summary.SendResult(`参数指定的路径是目录而不是一个文件(`+filePath+`)`, 504, ws)
-					}
+					if e == nil && !fileInfo.IsDir() {
+						fileWriter, e := bodyWriter.CreateFormFile(v.Name, fileInfo.Name())
 
-					fileWriter, e := bodyWriter.CreateFormFile(v.Name, fileInfo.Name())
-					if e != nil {
-						summary.SendResult(`临时文件创建失败(`+e.Error()+`)`, 505, ws)
-					}
+						if e == nil {
+							fileOpen, e := os.Open(filePath)
+							defer fileOpen.Close()
 
-					fileOpen, e := os.Open(filePath)
-					if e != nil {
-						summary.SendResult(`临时文件创建失败(`+e.Error()+`)`, 506, ws)
-					}
-					defer fileOpen.Close()
-					_, e = io.Copy(fileWriter, fileOpen)
-					if e != nil {
-						summary.SendResult(`临时文件创建失败(`+e.Error()+`)`, 507, ws)
+							if e == nil {
+								_, e = io.Copy(fileWriter, fileOpen)
+
+								if e == nil {
+									isEmptyBody = false
+								}
+							}
+						}
 					}
 				} else {
+					isEmptyBody = false
 					bodyWriter.WriteField(v.Name, v.Value)
 				}
 			}
 		}
+
 		bodyWriter.Close() // 这句话必不可少,且前面不能加 defer
 
 		// 参数不为空的话,设置请求头
