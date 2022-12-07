@@ -8,10 +8,10 @@ RunnerGo is a develop tool similar to apache bench (ab).
 ```
 Options:
     -n 	requests     Number of requests to perform
-	-c 	concurrency  Number of multiple requests to make at a time
-	-t  Timeout for each request in seconds, Default is 10
-	-h  This help
-	-v  Show verison
+    -c 	concurrency  Number of multiple requests to make at a time
+    -t  Timeout for each request in seconds, Default is 10
+    -h  This help
+    -v  Show verison
 ```
 ## Super simple to use
 RunnerGo is designed to be the simplest way possible to make stress test. 
