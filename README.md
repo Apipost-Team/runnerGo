@@ -22,7 +22,7 @@ Options:
 ```
 ## Request Para
 
-```json
+```javascript
 {
     "c": 2,
     "n": 2,
