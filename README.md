@@ -6,7 +6,7 @@ RunnerGo is a develop tool similar to apache bench (ab).
 RunnerGo is designed to be the simplest way possible to make stress test. 
 
 ```
-1. Install go https://golang.google.cn/dl/
+1. Install go. See https://golang.google.cn/dl/
 2. go build runnerGo.go
 3. ./runnerGo
 ```
@@ -15,7 +15,7 @@ RunnerGo is designed to be the simplest way possible to make stress test.
 Options:
     -n 	requests     Number of requests to perform
     -c 	concurrency  Number of multiple requests to make at a time
-    -data HAR format data for request http://www.softwareishard.com/blog/har-12-spec/#request
+    -data HAR format data for request. See http://www.softwareishard.com/blog/har-12-spec/#request
     -t  Timeout for each request in seconds, Default is 60
     -h  This help
     -v  Show verison
