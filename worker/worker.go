@@ -5,21 +5,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Apipost-Team/runnerGo/conf"
 	runnerHttp "github.com/Apipost-Team/runnerGo/http"
 	"github.com/Apipost-Team/runnerGo/summary"
+	"github.com/Apipost-Team/runnerGo/tools"
 	"golang.org/x/net/websocket"
 )
 
 type InputData struct {
-	C    int `json:"c"`
-	N    int `json:"n"`
-	Data runnerHttp.HarRequestType
+	C         int    `json:"c"`
+	N         int    `json:"n"`
+	Target_id string `json:"target_id"`
+	Data      runnerHttp.HarRequestType
 }
 
 // 添加任务
-func AddTask(data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarRequestType) {
-	for i := 0; i < conf.Conf.UrlNum; i++ {
+func AddTask(control tools.ControlData, data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarRequestType) {
+	for i := 0; i < control.Total; i++ {
 		urlChanel <- data
 	}
 
@@ -44,7 +45,7 @@ func worker(urlChanel chan runnerHttp.HarRequestType, ws *websocket.Conn) {
 }
 
 // 开始任务
-func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
+func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *websocket.Conn) {
 	var rwg sync.WaitGroup
 	var urlChanel = make(chan runnerHttp.HarRequestType)
 	summary.ResChanel = make(chan summary.Res)
@@ -52,10 +53,10 @@ func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
 	rwg.Add(1)
 
 	// 添加任务
-	go AddTask(data, urlChanel)
+	go AddTask(control, data, urlChanel)
 
 	// 并发消费 请求
-	for i := 0; i < conf.Conf.C; i++ {
+	for i := 0; i < control.C; i++ {
 		go func() {
 			worker(urlChanel, ws)
 		}()
@@ -63,7 +64,7 @@ func StartWork(data runnerHttp.HarRequestType, ws *websocket.Conn) {
 
 	// 处理数据
 	go func() {
-		res := summary.HandleRes()
+		res := summary.HandleRes(control)
 		jsonRes, err := json.Marshal(res)
 
 		if err != nil {

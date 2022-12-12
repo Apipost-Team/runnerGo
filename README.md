@@ -20,6 +20,7 @@ RunnerGo is designed to be the simplest way possible to make stress test.
 {
     "c": 2,
     "n": 2,
+    "target_id":"",
     "data": {
         "method": "POST",
         "url": "https://echo.apipost.cn/get.php",
@@ -55,6 +56,7 @@ RunnerGo is designed to be the simplest way possible to make stress test.
     "code": 200,
     "message": "success",
     "data": {
+        "target_id":"xxx",
         "CompleteRequests": 4,
         "FailedRequests": 0,
         "SuccessRequests": 4,

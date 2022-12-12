@@ -31,6 +31,7 @@ type Res struct {
 }
 
 type SummaryData struct {
+	Target_id             string
 	CompleteRequests      int
 	FailedRequests        int
 	SuccessRequests       int
@@ -63,7 +64,7 @@ type SummaryData struct {
 	MinRes   float64
 }
 
-func HandleRes() SummaryData {
+func HandleRes(control tools.ControlData) SummaryData {
 	var (
 		// RunOverSignal = make(chan int, 1)
 		codeDetail  = make(map[int]int)
@@ -76,9 +77,10 @@ func HandleRes() SummaryData {
 			MinReq:            float64(conf.Conf.TimeOut),
 			MinUseTime:        float64(conf.Conf.TimeOut),
 			MinRes:            float64(conf.Conf.TimeOut),
+			Target_id:         control.Target_id,
 		}
 
-		waitTimes = make([]float64, 0, conf.Conf.UrlNum)
+		waitTimes = make([]float64, 0, control.Total)
 	)
 
 	for {
@@ -90,8 +92,8 @@ func HandleRes() SummaryData {
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
-		fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-")
-		if summaryData.CompleteRequests == conf.Conf.UrlNum {
+		fmt.Println(summaryData.CompleteRequests, "-", control.Total, "-")
+		if summaryData.CompleteRequests == control.Total {
 			close(ResChanel)
 		}
 		code := res.Code
@@ -132,13 +134,13 @@ func HandleRes() SummaryData {
 
 	}
 
-	summaryData.AvgUseTime = tools.Decimal2(summaryData.AvgUseTime / float64(conf.Conf.UrlNum))
-	summaryData.AvgConn = tools.Decimal2(summaryData.AvgConn / float64(conf.Conf.UrlNum))
-	summaryData.AvgDNS = tools.Decimal2(summaryData.AvgDNS / float64(conf.Conf.UrlNum))
-	summaryData.AvgDelay = tools.Decimal2(summaryData.AvgDelay / float64(conf.Conf.UrlNum))
-	summaryData.AvgReq = tools.Decimal2(summaryData.AvgReq / float64(conf.Conf.UrlNum))
-	summaryData.AvgRes = tools.Decimal2(summaryData.AvgRes / float64(conf.Conf.UrlNum))
-	summaryData.AvgDataSize = summaryData.TotalDataSize / conf.Conf.UrlNum
+	summaryData.AvgUseTime = tools.Decimal2(summaryData.AvgUseTime / float64(control.Total))
+	summaryData.AvgConn = tools.Decimal2(summaryData.AvgConn / float64(control.Total))
+	summaryData.AvgDNS = tools.Decimal2(summaryData.AvgDNS / float64(control.Total))
+	summaryData.AvgDelay = tools.Decimal2(summaryData.AvgDelay / float64(control.Total))
+	summaryData.AvgReq = tools.Decimal2(summaryData.AvgReq / float64(control.Total))
+	summaryData.AvgRes = tools.Decimal2(summaryData.AvgRes / float64(control.Total))
+	summaryData.AvgDataSize = summaryData.TotalDataSize / control.Total
 
 	for k, v := range codeDetail {
 		summaryData.CodeDetail[strconv.Itoa(k)] = v
@@ -146,7 +148,7 @@ func HandleRes() SummaryData {
 
 	t := (float64(conf.Conf.EndTime-conf.Conf.StartTime) / 10e8)
 	summaryData.TimeToken = t
-	summaryData.RequestsPerSec = float64(conf.Conf.UrlNum) / t
+	summaryData.RequestsPerSec = float64(control.Total) / t
 	summaryData.SuccessRequestsPerSec = float64(summaryData.SuccessRequests) / t
 	sort.Float64s(waitTimes)
 	waitTimesL := float64(len(waitTimes))

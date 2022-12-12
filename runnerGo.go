@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
@@ -24,21 +26,43 @@ func main() {
 			if err = websocket.Message.Receive(ws, &body); err != nil {
 				summary.SendResult(string(err.Error()), 500, ws)
 			} else {
+				if strings.HasPrefix(body, "cancel") {
+					//取消压测target_id, cancel:xxxxxxxxxx
+					log.Println("cancel")
+					continue
+				}
+
+				if strings.HasPrefix(body, "query:") {
+					//查询target_id执行情况, query:xxxxxxxxxx
+					log.Println("get")
+					continue
+				}
+
+				if strings.HasPrefix(body, "quit") {
+					//退出
+					os.Exit(0)
+				}
+
 				var bodyStruct worker.InputData
 
 				// 解析 har 结构
 				json.Unmarshal([]byte(string(body)), &bodyStruct)
-				conf.Conf.C = bodyStruct.C
-				conf.Conf.UrlNum = bodyStruct.C * bodyStruct.N
 
-				if conf.Conf.UrlNum <= 0 {
+				control := tools.ControlData{
+					C:         bodyStruct.C,
+					N:         bodyStruct.N,
+					Total:     bodyStruct.C * bodyStruct.N,
+					Target_id: bodyStruct.Target_id,
+				}
+
+				if control.Total <= 0 {
 					summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
 				} else {
 					// 开始时间
 					conf.Conf.StartTime = int(tools.GetNowUnixNano())
 
 					// 开始压测
-					worker.StartWork(bodyStruct.Data, ws)
+					worker.StartWork(control, bodyStruct.Data, ws)
 				}
 			}
 		}
