@@ -3,42 +3,51 @@
 RunnerGo is a develop tool similar to apache bench (ab).
 
 ## Usage
-* runnerGo -h
+RunnerGo is designed to be the simplest way possible to make stress test. 
+
+```
+1. Install go. See https://golang.google.cn/dl/
+2. go build runnerGo.go
+3. ./runnerGo
+```
 
 ```
 Options:
     -n 	requests     Number of requests to perform
     -c 	concurrency  Number of multiple requests to make at a time
+    -data HAR format data for request. See http://www.softwareishard.com/blog/har-12-spec/#request
     -t  Timeout for each request in seconds, Default is 60
     -h  This help
     -v  Show verison
 ```
-## Super simple to use
-RunnerGo is designed to be the simplest way possible to make stress test. 
+## Request Para
 
-```json
+```javascript
 {
     "c": 2,
     "n": 2,
     "target_id":"",
     "data": {
         "method": "POST",
-        "url": "https://echo.apipost.cn/get.php",
-        "httpVersion": "HTTP/1.1",
+        "url": "http://echo.apipost.com/get.php",
         "mode": "urlencoded",
-        "headers": [],
-        "queryString": [],
-        "cookies": [],
-        "headersSize": 670,
-        "bodySize": 279,
+        "headers": [
+            {
+                "name": "Pragma",
+                "value": "no-cache"
+            },
+            {
+                "name": "Server",
+                "value": "yisu.com"
+            }
+        ],
         "postData": {
-            "mimeType": "multipart/form-data; boundary=----WebKitFormBoundaryt1AKSW2uGI9p3PPS",
-            "text": "------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"logo\"; filename=\"har.json\"\r\nContent-Type: text/x-sh\r\n\r\n\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\n标题\r\n------WebKitFormBoundaryt1AKSW2uGI9p3PPS--\r\n",
-            "params": [
+            "text":"some data", // body for raw
+            "params": [ // body for form-data/urlencoded
                 {
                     "name": "logo",
                     "type": "file",
-                    "value": "@/Users/mhw/Downloads/har.json"
+                    "value": "@/Users/root/Downloads/1.jpg"
                 },
                 {
                     "name": "title",

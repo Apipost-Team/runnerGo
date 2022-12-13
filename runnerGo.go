@@ -14,6 +14,8 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
+
 func main() {
 	//接受websocket的路由地址
 	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
@@ -24,7 +26,8 @@ func main() {
 			//websocket接受信息
 
 			if err = websocket.Message.Receive(ws, &body); err != nil {
-				summary.SendResult(string(err.Error()), 500, ws)
+				ws.Close()
+				break
 			} else {
 				if strings.HasPrefix(body, "cancel") {
 					//取消压测target_id, cancel:xxxxxxxxxx
@@ -47,7 +50,6 @@ func main() {
 
 				// 解析 har 结构
 				json.Unmarshal([]byte(string(body)), &bodyStruct)
-
 				control := tools.ControlData{
 					C:         bodyStruct.C,
 					N:         bodyStruct.N,
@@ -55,8 +57,20 @@ func main() {
 					Target_id: bodyStruct.Target_id,
 				}
 
+				isForbidden := false
+
+				for i := 0; i < len(urlsBlacklist); i++ {
+					if strings.Index(strings.ToLower(bodyStruct.Data.Url), urlsBlacklist[i]) > -1 {
+						isForbidden = true
+						goto gotofor
+					}
+				}
+
+			gotofor:
 				if control.Total <= 0 {
 					summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
+				} else if isForbidden {
+					summary.SendResult(`禁止请求的URL`, 301, ws)
 				} else {
 					// 开始时间
 					conf.Conf.StartTime = int(tools.GetNowUnixNano())
@@ -68,6 +82,12 @@ func main() {
 		}
 	}))
 
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	t, _ := template.ParseFiles("websocket.html")
+	// 	t.Execute(w, nil)
+	// })
+
+	// go worker.OpenUrl("http://127.0.0.1:10397/")
 	if err := http.ListenAndServe(":10397", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

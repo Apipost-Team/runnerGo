@@ -28,12 +28,6 @@ var (
 	Conf = Config{}
 )
 
-func confError(err error) {
-	fmt.Println(usage)
-	fmt.Println(err)
-	os.Exit(1)
-}
-
 func arrangeOptions() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, usage)

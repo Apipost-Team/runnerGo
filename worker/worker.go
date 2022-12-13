@@ -2,6 +2,8 @@ package worker
 
 import (
 	"encoding/json"
+	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -77,4 +79,24 @@ func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *we
 	}()
 
 	rwg.Wait()
+}
+
+// 用默认浏览器打开指定URL
+func OpenUrl(url string) error {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+
+	}
+
+	args = append(args, url)
+	return exec.Command(cmd, args...).Start()
 }
