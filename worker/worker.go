@@ -60,7 +60,7 @@ func worker(urlChanel chan runnerHttp.HarRequestType, ws *websocket.Conn, ctx co
 }
 
 // 开始任务
-func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *websocket.Conn, cancelSignal chan bool) {
+func StartWork(control *tools.ControlData, data runnerHttp.HarRequestType, ws *websocket.Conn) {
 	var rwg sync.WaitGroup
 	var urlChanel = make(chan runnerHttp.HarRequestType)
 	summary.ResChanel = make(chan summary.Res)
@@ -69,14 +69,24 @@ func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *we
 	ctx, cancel := context.WithCancel(context.Background())
 	//注册取消操作
 	go func() {
-		select {
-		case <-ctx.Done():
-			return
-		case <-cancelSignal:
-		case <-time.After(time.Second * time.Duration(control.MaxRunTime)):
-			fmt.Println("主动关闭")
-			cancel() //取消所有任务
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Second * time.Duration(control.MaxRunTime)):
+				fmt.Println("超时关闭")
+				cancel() //取消所有任务
+				return
+			default:
+				time.Sleep(time.Duration(50) * time.Millisecond)
+				if control.IsCancel {
+					fmt.Println("主动关闭")
+					cancel() //取消所有任务
+					return
+				}
+			}
 		}
+
 	}()
 
 	defer cancel() //主动情况
@@ -84,7 +94,7 @@ func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *we
 	rwg.Add(1)
 
 	// 添加任务
-	go AddTask(control, data, urlChanel, ctx)
+	go AddTask(*control, data, urlChanel, ctx)
 
 	// 并发消费 请求
 	for i := 0; i < control.C; i++ {
@@ -95,7 +105,7 @@ func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *we
 
 	// 处理数据
 	go func() {
-		res := summary.HandleRes(control, ctx)
+		res := summary.HandleRes(*control, ctx)
 		jsonRes, err := json.Marshal(res)
 
 		if err != nil {

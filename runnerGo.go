@@ -19,8 +19,7 @@ func main() {
 	//接受websocket的路由地址
 	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
 		var err error
-
-		var signalMap = make(map[string]chan bool)
+		var controlMap = make(map[string]*tools.ControlData)
 
 		for {
 			var body string
@@ -34,13 +33,13 @@ func main() {
 					//取消压测target_id, cancel:xxxxxxxxxx
 					log.Println(body)
 					target_id := body[7:]
-					cancelSignal, ok := signalMap[target_id]
+					control, ok := controlMap[target_id]
 					if !ok {
 						summary.SendResult(`{target_id} 不存在`, 501, ws)
 						continue
 					}
 
-					cancelSignal <- true
+					control.IsCancel = true
 
 					continue
 				}
@@ -66,6 +65,7 @@ func main() {
 					Total:      bodyStruct.C * bodyStruct.N,
 					Target_id:  bodyStruct.Target_id,
 					MaxRunTime: 600, //10分钟
+					IsCancel:   false,
 				}
 
 				isForbidden := false
@@ -87,12 +87,11 @@ func main() {
 					control.StartTime = int(tools.GetNowUnixNano())
 					control.EndTime = control.StartTime //初始化执行时间
 
-					var cancelSignal = make(chan bool)
 					if len(control.Target_id) > 0 {
-						signalMap[control.Target_id] = cancelSignal
+						controlMap[control.Target_id] = &control
 					}
-					// 开始压测
-					worker.StartWork(control, bodyStruct.Data, ws, cancelSignal)
+					// 开始压测,改异步
+					worker.StartWork(&control, bodyStruct.Data, ws)
 				}
 			}
 		}
