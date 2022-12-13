@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"runtime"
 	"sync"
@@ -59,12 +60,26 @@ func worker(urlChanel chan runnerHttp.HarRequestType, ws *websocket.Conn, ctx co
 }
 
 // 开始任务
-func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *websocket.Conn) {
+func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *websocket.Conn, cancelSignal chan bool) {
 	var rwg sync.WaitGroup
 	var urlChanel = make(chan runnerHttp.HarRequestType)
 	summary.ResChanel = make(chan summary.Res)
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*time.Duration(control.MaxRunTime))
+	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(control.MaxRunTime))
+	ctx, cancel := context.WithCancel(context.Background())
+	//注册取消操作
+	go func() {
+		select {
+		case <-ctx.Done():
+			return
+		case <-cancelSignal:
+		case <-time.After(time.Second * time.Duration(control.MaxRunTime)):
+			fmt.Println("主动关闭")
+			cancel() //取消所有任务
+		}
+	}()
+
+	defer cancel() //主动情况
 
 	rwg.Add(1)
 
