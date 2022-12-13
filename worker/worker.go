@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"encoding/json"
 	"os/exec"
 	"runtime"
@@ -21,28 +22,39 @@ type InputData struct {
 }
 
 // 添加任务
-func AddTask(control tools.ControlData, data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarRequestType) {
+func AddTask(control tools.ControlData, data runnerHttp.HarRequestType, urlChanel chan runnerHttp.HarRequestType, ctx context.Context) {
 	for i := 0; i < control.Total; i++ {
 		urlChanel <- data
 	}
 
 	for {
-		time.Sleep(time.Duration(50) * time.Millisecond)
-		if len(urlChanel) == 0 {
+		select {
+		case <-ctx.Done():
 			close(urlChanel)
 			return
+		default:
+			time.Sleep(time.Duration(50) * time.Millisecond)
+			if len(urlChanel) == 0 {
+				close(urlChanel)
+				return
+			}
 		}
 	}
 }
 
 // 执行请求任务
-func worker(urlChanel chan runnerHttp.HarRequestType, ws *websocket.Conn) {
+func worker(urlChanel chan runnerHttp.HarRequestType, ws *websocket.Conn, ctx context.Context) {
 	for { // for 循环逐个执行 URL
-		data, ok := <-urlChanel
-		if !ok {
+		select {
+		case <-ctx.Done():
 			return
+		default:
+			data, ok := <-urlChanel
+			if !ok {
+				return
+			}
+			summary.ResChanel <- runnerHttp.Do(data, ws)
 		}
-		summary.ResChanel <- runnerHttp.Do(data, ws)
 	}
 }
 
@@ -52,21 +64,23 @@ func StartWork(control tools.ControlData, data runnerHttp.HarRequestType, ws *we
 	var urlChanel = make(chan runnerHttp.HarRequestType)
 	summary.ResChanel = make(chan summary.Res)
 
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*time.Duration(control.MaxRunTime))
+
 	rwg.Add(1)
 
 	// 添加任务
-	go AddTask(control, data, urlChanel)
+	go AddTask(control, data, urlChanel, ctx)
 
 	// 并发消费 请求
 	for i := 0; i < control.C; i++ {
 		go func() {
-			worker(urlChanel, ws)
+			worker(urlChanel, ws, ctx)
 		}()
 	}
 
 	// 处理数据
 	go func() {
-		res := summary.HandleRes(control)
+		res := summary.HandleRes(control, ctx)
 		jsonRes, err := json.Marshal(res)
 
 		if err != nil {

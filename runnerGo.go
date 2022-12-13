@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
@@ -51,10 +50,11 @@ func main() {
 				// 解析 har 结构
 				json.Unmarshal([]byte(string(body)), &bodyStruct)
 				control := tools.ControlData{
-					C:         bodyStruct.C,
-					N:         bodyStruct.N,
-					Total:     bodyStruct.C * bodyStruct.N,
-					Target_id: bodyStruct.Target_id,
+					C:          bodyStruct.C,
+					N:          bodyStruct.N,
+					Total:      bodyStruct.C * bodyStruct.N,
+					Target_id:  bodyStruct.Target_id,
+					MaxRunTime: 600, //10分钟
 				}
 
 				isForbidden := false
@@ -73,7 +73,8 @@ func main() {
 					summary.SendResult(`禁止请求的URL`, 301, ws)
 				} else {
 					// 开始时间
-					conf.Conf.StartTime = int(tools.GetNowUnixNano())
+					control.StartTime = int(tools.GetNowUnixNano())
+					control.EndTime = control.StartTime //初始化执行时间
 
 					// 开始压测
 					worker.StartWork(control, bodyStruct.Data, ws)

@@ -1,6 +1,7 @@
 package summary
 
 import (
+	"context"
 	"math"
 	"sort"
 	"strconv"
@@ -63,7 +64,7 @@ type SummaryData struct {
 	MinRes   float64
 }
 
-func HandleRes(control tools.ControlData) SummaryData {
+func HandleRes(control tools.ControlData, ctx context.Context) SummaryData {
 	var (
 		// RunOverSignal = make(chan int, 1)
 		codeDetail  = make(map[int]int)
@@ -82,12 +83,18 @@ func HandleRes(control tools.ControlData) SummaryData {
 		waitTimes = make([]float64, 0, control.Total)
 	)
 
+OutLable:
 	for {
+		select {
+		case <-ctx.Done():
+			break OutLable
+		default:
+
+		}
 		res, ok := <-ResChanel
 		if !ok {
 			break
 		}
-
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
@@ -103,6 +110,9 @@ func HandleRes(control tools.ControlData) SummaryData {
 		}
 		if conf.Conf.EndTime < res.TimeStamp {
 			conf.Conf.EndTime = res.TimeStamp
+		}
+		if control.EndTime < res.TimeStamp {
+			control.EndTime = res.TimeStamp
 		}
 		if code > 299 || code < 200 {
 			summaryData.FailedRequests++
@@ -145,7 +155,7 @@ func HandleRes(control tools.ControlData) SummaryData {
 		summaryData.CodeDetail[strconv.Itoa(k)] = v
 	}
 
-	t := (float64(conf.Conf.EndTime-conf.Conf.StartTime) / 10e8)
+	t := (float64(control.EndTime-control.StartTime) / 10e8)
 	summaryData.TimeToken = t
 	summaryData.RequestsPerSec = float64(control.Total) / t
 	summaryData.SuccessRequestsPerSec = float64(summaryData.SuccessRequests) / t
