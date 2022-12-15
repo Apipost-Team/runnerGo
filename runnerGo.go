@@ -29,8 +29,11 @@ func main() {
 					break
 				}
 				//fmt.Println("Received: ", body)
+				if strings.HasPrefix(body, "PING") || strings.HasPrefix(body, "ping") {
+					continue
+				}
+				//取消压测target_id, cancel:xxxxxxxxxx
 				if strings.HasPrefix(body, "cancel:") {
-					//取消压测target_id, cancel:xxxxxxxxxx
 					target_id := body[7:]
 					control, ok := controlMap[target_id]
 					if !ok {
@@ -49,8 +52,8 @@ func main() {
 					continue
 				}
 
+				//查询target_id执行情况, query:xxxxxxxxxx
 				if strings.HasPrefix(body, "query:") {
-					//查询target_id执行情况, query:xxxxxxxxxx
 					target_id := body[6:]
 					control, ok := controlMap[target_id]
 					if !ok {
@@ -87,7 +90,7 @@ func main() {
 					MaxRunTime: bodyStruct.MaxRunTime, //10分钟
 					IsCancel:   false,
 					IsRunning:  false,
-					TimeOut:    10, //超时时间
+					TimeOut:    20, //超时时间
 				}
 
 				if control.MaxRunTime < 1 {
