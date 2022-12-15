@@ -8,14 +8,11 @@ import (
 	"sync"
 
 	// "github.com/Apipost-Team/runnerGo/http"
-
-	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/tools"
 )
 
 var (
 	AnalysisData sync.Map
-	ResChanel    = make(chan Res)
 )
 
 type Res struct {
@@ -64,43 +61,44 @@ type SummaryData struct {
 	MinRes   float64
 }
 
-func HandleRes(control tools.ControlData, ctx context.Context) SummaryData {
+func HandleRes(control tools.ControlData, resultChanel chan Res, ctx context.Context) SummaryData {
 	var (
 		// RunOverSignal = make(chan int, 1)
 		codeDetail  = make(map[int]int)
 		summaryData = SummaryData{
 			CodeDetail:        make(map[string]int),
 			WaitingTimeDetail: make(map[string]int),
-			MinConn:           float64(conf.Conf.TimeOut),
-			MinDNS:            float64(conf.Conf.TimeOut),
-			MinDelay:          float64(conf.Conf.TimeOut),
-			MinReq:            float64(conf.Conf.TimeOut),
-			MinUseTime:        float64(conf.Conf.TimeOut),
-			MinRes:            float64(conf.Conf.TimeOut),
+			MinConn:           float64(control.TimeOut),
+			MinDNS:            float64(control.TimeOut),
+			MinDelay:          float64(control.TimeOut),
+			MinReq:            float64(control.TimeOut),
+			MinUseTime:        float64(control.TimeOut),
+			MinRes:            float64(control.TimeOut),
 			Target_id:         control.Target_id,
 		}
 
 		waitTimes = make([]float64, 0, control.Total)
 	)
 
+	doneChan := ctx.Done()
+
 OutLable:
 	for {
 		select {
-		case <-ctx.Done():
+		case <-doneChan:
 			break OutLable
 		default:
 
 		}
-		res, ok := <-ResChanel
+		res, ok := <-resultChanel
 		if !ok {
 			break
 		}
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
-		// fmt.Println(summaryData.CompleteRequests, "-", conf.Conf.UrlNum, "-")
 		if summaryData.CompleteRequests == control.Total {
-			close(ResChanel)
+			close(resultChanel)
 		}
 		code := res.Code
 		if _, ok := codeDetail[code]; ok {
@@ -108,9 +106,7 @@ OutLable:
 		} else {
 			codeDetail[code] = 1
 		}
-		if conf.Conf.EndTime < res.TimeStamp {
-			conf.Conf.EndTime = res.TimeStamp
-		}
+
 		if control.EndTime < res.TimeStamp {
 			control.EndTime = res.TimeStamp
 		}

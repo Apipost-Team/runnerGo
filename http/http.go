@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
@@ -14,10 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Apipost-Team/runnerGo/conf"
 	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
-	"golang.org/x/net/websocket"
 	// browser "github.com/EDDYCJY/fake-useragent"
 )
 
@@ -72,34 +69,20 @@ type RunnerGoType struct {
 	Headers map[string]string
 }
 
-const (
-	clientsN int = 2
-)
-
-var (
-	HttpClients []*http.Client
-)
-
-func init() {
-	for i := 0; i < clientsN; i++ {
-		HttpClients = append(HttpClients, creteHttpClient())
-	}
-}
-
 func creteHttpClient() *http.Client {
 	client := &http.Client{
 		Transport: &http.Transport{
-			MaxConnsPerHost:     conf.Conf.C/clientsN + 128,
-			MaxIdleConnsPerHost: conf.Conf.C/clientsN + 128,
+			MaxConnsPerHost:     128,
+			MaxIdleConnsPerHost: 128,
 			DisableKeepAlives:   false,
 			DisableCompression:  false,
 		},
-		Timeout: time.Duration(conf.Conf.TimeOut) * time.Second,
+		Timeout: time.Duration(10) * time.Second,
 	}
 	return client
 }
 
-func Do(harStruct HarRequestType, ws *websocket.Conn) summary.Res {
+func Do(client *http.Client, harStruct HarRequestType) summary.Res {
 	var code int
 	var size, tmpt int64
 	var dnsStart, connStart, respStart, reqStart, delayStart int64
@@ -299,7 +282,7 @@ func Do(harStruct HarRequestType, ws *websocket.Conn) summary.Res {
 		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 		tStart := tools.GetNowUnixNano()
 
-		client := HttpClients[rand.Intn(clientsN)]
+		//client := HttpClients[rand.Intn(clientsN)]
 		response, err := client.Do(req)
 
 		tEnd := tools.Now()

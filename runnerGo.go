@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
 	"golang.org/x/net/websocket"
@@ -16,37 +16,57 @@ import (
 var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
 
 func main() {
-	//接受websocket的路由地址
 	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
-		var err error
-		var controlMap = make(map[string]*tools.ControlData)
+		var sendChan = make(chan string)
+		defer ws.Close()
 
-		for {
-			var body string
-			//websocket接受信息
-
-			if err = websocket.Message.Receive(ws, &body); err != nil {
-				ws.Close()
-				break
-			} else {
+		go func(sendChan chan string, ws *websocket.Conn) {
+			var controlMap = make(map[string]*tools.ControlData)
+			for {
+				var body string
+				if err := websocket.Message.Receive(ws, &body); err != nil {
+					ws.Close()
+					break
+				}
+				//fmt.Println("Received: ", body)
 				if strings.HasPrefix(body, "cancel:") {
 					//取消压测target_id, cancel:xxxxxxxxxx
-					log.Println(body)
 					target_id := body[7:]
 					control, ok := controlMap[target_id]
 					if !ok {
-						summary.SendResult(`{target_id} 不存在`, 501, ws)
+						msg := `{"code":501, "message":"target_id 不存在", "data":{}}`
+						sendChan <- msg
+						continue
+					}
+
+					if !control.IsRunning {
+						msg := `{"code":501, "message":"target_id 任务已结束，无需终止", "data":{}}`
+						sendChan <- msg
 						continue
 					}
 
 					control.IsCancel = true
-
 					continue
 				}
 
 				if strings.HasPrefix(body, "query:") {
 					//查询target_id执行情况, query:xxxxxxxxxx
-					log.Println("get")
+					target_id := body[6:]
+					control, ok := controlMap[target_id]
+					if !ok {
+						msg := `{"code":501, "message":"target_id 不存在", "data":{}}`
+						sendChan <- msg
+						continue
+					}
+
+					jsonRes, err := json.Marshal(control)
+					if err != nil {
+						log.Println(err.Error())
+						continue
+					}
+
+					msg := `{"code":200, "message":"success", "data":` + string(jsonRes) + `}`
+					sendChan <- msg
 					continue
 				}
 
@@ -55,7 +75,7 @@ func main() {
 					os.Exit(0)
 				}
 
-				var bodyStruct worker.InputData
+				var bodyStruct worker.RawWorkData
 
 				// 解析 har 结构
 				json.Unmarshal([]byte(string(body)), &bodyStruct)
@@ -64,45 +84,69 @@ func main() {
 					N:          bodyStruct.N,
 					Total:      bodyStruct.C * bodyStruct.N,
 					Target_id:  bodyStruct.Target_id,
-					MaxRunTime: 600, //10分钟
+					MaxRunTime: bodyStruct.MaxRunTime, //10分钟
 					IsCancel:   false,
+					IsRunning:  false,
+					TimeOut:    10, //超时时间
 				}
 
-				isForbidden := false
-
-				for i := 0; i < len(urlsBlacklist); i++ {
-					if strings.Index(strings.ToLower(bodyStruct.Data.Url), urlsBlacklist[i]) > -1 {
-						isForbidden = true
-						goto gotofor
-					}
+				if control.MaxRunTime < 1 {
+					control.MaxRunTime = 600 //10分钟
 				}
 
-			gotofor:
+				if control.TimeOut > control.MaxRunTime {
+					control.TimeOut = control.MaxRunTime //超时时间不能超过总时间
+				}
+
+				fmt.Println(control)
+
 				if control.Total <= 0 {
-					summary.SendResult(`并发数或者循环次数至少为1`, 501, ws)
-				} else if isForbidden {
-					summary.SendResult(`禁止请求的URL`, 301, ws)
-				} else {
-					// 开始时间
-					control.StartTime = int(tools.GetNowUnixNano())
-					control.EndTime = control.StartTime //初始化执行时间
-
-					if len(control.Target_id) > 0 {
-						controlMap[control.Target_id] = &control
-					}
-					// 开始压测,改异步
-					worker.StartWork(&control, bodyStruct.Data, ws)
+					msg := `{"code":501, "message":"并发数或者循环次数至少为1", "data":{}}`
+					sendChan <- msg
+					continue
 				}
+
+				//检查url是否被禁止
+				isForbidden := false
+				for i := 0; i < len(urlsBlacklist); i++ {
+					if strings.Contains(strings.ToLower(bodyStruct.Data.Url), urlsBlacklist[i]) {
+						isForbidden = true
+						break
+					}
+				}
+
+				if isForbidden {
+					msg := `{"code":301, "message":"禁止请求的URL", "data":{}}`
+					sendChan <- msg
+					continue
+				}
+
+				if len(control.Target_id) > 0 {
+					newControl, ok := controlMap[control.Target_id]
+					if ok && newControl.IsRunning {
+						msg := `{"code":301, "message":"相同的target_id任务还在执行，请等上次执行完成", "data":{}}`
+						sendChan <- msg
+						continue
+					}
+					controlMap[control.Target_id] = &control
+				}
+				// 开始压测,改异步
+				go worker.Process(&control, bodyStruct.Data, sendChan)
+
+			}
+		}(sendChan, ws)
+
+		for {
+			msg := <-sendChan
+			//fmt.Println("send: ", msg)
+			if err := websocket.Message.Send(ws, msg); err != nil {
+				fmt.Println(err)
+				break
 			}
 		}
+
 	}))
 
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	t, _ := template.ParseFiles("websocket.html")
-	// 	t.Execute(w, nil)
-	// })
-
-	// go worker.OpenUrl("http://127.0.0.1:10397/")
 	if err := http.ListenAndServe(":10397", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
