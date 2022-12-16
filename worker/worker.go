@@ -52,6 +52,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		for {
 			select {
 			case <-ctx.Done():
+				close(urlChanel) //关闭家里
 				fmt.Println("任务结束")
 				return
 			case <-timeChan:
