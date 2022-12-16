@@ -4,10 +4,16 @@
 name: Go
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  release:
+    types: [published]
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      failJob:
+        description: Fail the job?
+        type: boolean
+        required: true
+        default: false    
 
 jobs:
 
@@ -37,5 +43,17 @@ jobs:
       run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o runnerGo_linux_x64 runnerGo.go
 
     - name: Build liunx arm64
-      run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o runnerGo_linux_arm64 runnerGo.go 
+      run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o runnerGo_linux_arm64 runnerGo.go
 
+    - name: Upload
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          runnerGo_win_x64.exe
+          runnerGo_win_x32.exe
+          runnerGo_mac_x64
+          runnerGo_mac_arm64
+          runnerGo_linux_x64
+          runnerGo_linux_arm64          
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
