@@ -48,6 +48,7 @@ jobs:
     - name: Upload
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: release
         files: |
           runnerGo_win_x64.exe
           runnerGo_win_x32.exe
