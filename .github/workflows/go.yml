@@ -4,9 +4,9 @@
 name: Go
 
 on:
-  release:
-    types: [published]
-    branches: [ master ]
+  push:
+    tags:
+    - v*
   workflow_dispatch:
     inputs:
       failJob:
@@ -48,7 +48,8 @@ jobs:
     - name: Upload
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: release
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
         files: |
           runnerGo_win_x64.exe
           runnerGo_win_x32.exe
