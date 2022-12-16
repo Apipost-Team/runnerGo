@@ -27,6 +27,10 @@ jobs:
       with:
         go-version: 1.19
 
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}        
+
     - name: Build win x64
       run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o runnerGo_win_x64.exe runnerGo.go
 
@@ -48,8 +52,7 @@ jobs:
     - name: Upload
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
         files: |
           runnerGo_win_x64.exe
           runnerGo_win_x32.exe
