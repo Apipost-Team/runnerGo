@@ -34,7 +34,7 @@ func OpenUrl(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
-func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendChan chan string) {
+func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendChan chan<- string) {
 	//control  初始化
 	control.StartTime = int(tools.GetNowUnixNano())
 	control.EndTime = control.StartTime
@@ -57,7 +57,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				return
 			case <-timeChan:
 				fmt.Println("超时关闭")
-				cancelFun() //取消所有任务
+				close(urlChanel) //阻止发送数据
 				return
 			default:
 				time.Sleep(time.Duration(50) * time.Millisecond)
@@ -78,11 +78,18 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	}
 
 	//添加任务呢
-	go func() {
+	go func(urlChanel chan<- runnerHttp.HarRequestType, ctx context.Context) {
+		doneChan := ctx.Done()
 		for i := 0; i < control.Total; i++ {
-			urlChanel <- data
+			select {
+			case <-doneChan:
+				close(urlChanel)
+				return
+			default:
+				urlChanel <- data
+			}
 		}
-	}()
+	}(urlChanel, ctx)
 
 	//统计结果
 	res := summary.HandleRes(*control, resultChanel, ctx)
@@ -99,7 +106,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 
 }
 
-func doWork(control tools.ControlData, urlChanel chan runnerHttp.HarRequestType, resultChanel chan summary.Res, ctx context.Context) {
+func doWork(control tools.ControlData, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, ctx context.Context) {
 	doneChan := ctx.Done()
 
 	//初始化 httpclient

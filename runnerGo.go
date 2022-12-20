@@ -20,7 +20,7 @@ func main() {
 		var sendChan = make(chan string)
 		defer ws.Close()
 
-		go func(sendChan chan string, ws *websocket.Conn) {
+		go func(sendChan chan<- string, ws *websocket.Conn) {
 			var controlMap = make(map[string]*tools.ControlData)
 			for {
 				var body string
