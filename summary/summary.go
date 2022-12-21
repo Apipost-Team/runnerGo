@@ -2,6 +2,7 @@ package summary
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -61,7 +62,7 @@ type SummaryData struct {
 	MinRes   float64
 }
 
-func HandleRes(control tools.ControlData, resultChanel <-chan Res, ctx context.Context) SummaryData {
+func HandleRes(control tools.ControlData, resultChanel chan Res, ctx context.Context) SummaryData {
 	var (
 		// RunOverSignal = make(chan int, 1)
 		codeDetail  = make(map[int]int)
@@ -86,6 +87,7 @@ OutLable:
 	for {
 		select {
 		case <-doneChan:
+			fmt.Println("统计退出")
 			break OutLable
 		default:
 
@@ -97,9 +99,9 @@ OutLable:
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
-		// if summaryData.CompleteRequests == control.Total {
-		// 	close(resultChanel)
-		// }
+		if summaryData.CompleteRequests == control.Total {
+			close(resultChanel)
+		}
 		code := res.Code
 		if _, ok := codeDetail[code]; ok {
 			codeDetail[code]++

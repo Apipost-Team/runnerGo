@@ -38,11 +38,12 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	//control  初始化
 	control.StartTime = int(tools.GetNowUnixNano())
 	control.EndTime = control.StartTime
-	control.IsRunning = true
+	control.IsRunning = true //设置为启动
+
 	defer func() { control.IsRunning = false }() //设置为执行完成
 
-	var urlChanel = make(chan runnerHttp.HarRequestType) //url任务列表
-	var resultChanel = make(chan summary.Res)            //返回结果列表
+	var urlChanel = make(chan runnerHttp.HarRequestType, 10) //url任务列表,带缓冲
+	var resultChanel = make(chan summary.Res, 10)            //返回结果列表，带缓冲
 
 	ctx, cancelFun := context.WithCancel(context.Background()) //主动取消
 	//注册取消操作
@@ -83,6 +84,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		for i := 0; i < control.Total; i++ {
 			select {
 			case <-doneChan:
+				fmt.Println("关闭任务发送")
 				close(urlChanel)
 				return
 			default:
