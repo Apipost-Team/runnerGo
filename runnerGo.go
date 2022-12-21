@@ -25,6 +25,13 @@ func main() {
 			for {
 				var body string
 				if err := websocket.Message.Receive(ws, &body); err != nil {
+					fmt.Println("read error")
+					fmt.Println(err)
+					for _, control := range controlMap {
+						if control.IsRunning {
+							control.IsCancel = true //主动设置为取消
+						}
+					}
 					ws.Close()
 					break
 				}
@@ -143,6 +150,7 @@ func main() {
 			msg := <-sendChan
 			//fmt.Println("send: ", msg)
 			if err := websocket.Message.Send(ws, msg); err != nil {
+				fmt.Println("write")
 				fmt.Println(err)
 				break
 			}
