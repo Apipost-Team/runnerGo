@@ -32,22 +32,35 @@ jobs:
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}        
 
     - name: Build win x64
-      run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o runnerGo_win_x64.exe runnerGo.go
+      run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o runnerGo_win_x64.exe runnerGo.go
 
     - name: Build win x32
-      run: CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o runnerGo_win_x32.exe runnerGo.go
+      run: CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags "-s -w" -o runnerGo_win_x32.exe runnerGo.go
 
     - name: Build mac x64
-      run: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o runnerGo_mac_x64 runnerGo.go
+      run: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o runnerGo_mac_x64 runnerGo.go
 
     - name: Build mac m1
-      run: CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o  runnerGo_mac_arm64 runnerGo.go
+      run: CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o  runnerGo_mac_arm64 runnerGo.go
 
     - name: Build linux x64
-      run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o runnerGo_linux_x64 runnerGo.go
+      run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o runnerGo_linux_x64 runnerGo.go
 
     - name: Build liunx arm64
-      run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o runnerGo_linux_arm64 runnerGo.go
+      run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o runnerGo_linux_arm64 runnerGo.go
+
+    - name: Run UPX
+      uses: crazy-max/ghaction-upx@v2
+      with:
+        version: latest
+        files: |
+          runnerGo_win_x64.exe
+          runnerGo_win_x32.exe
+          runnerGo_mac_x64
+          runnerGo_mac_arm64
+          runnerGo_linux_x64
+          runnerGo_linux_arm64
+        args: -9
 
     - name: Upload
       uses: softprops/action-gh-release@v1
