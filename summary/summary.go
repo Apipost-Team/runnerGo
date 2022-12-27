@@ -141,13 +141,17 @@ OutLable:
 
 	}
 
-	summaryData.AvgUseTime = tools.Decimal2(summaryData.AvgUseTime / float64(control.Total))
-	summaryData.AvgConn = tools.Decimal2(summaryData.AvgConn / float64(control.Total))
-	summaryData.AvgDNS = tools.Decimal2(summaryData.AvgDNS / float64(control.Total))
-	summaryData.AvgDelay = tools.Decimal2(summaryData.AvgDelay / float64(control.Total))
-	summaryData.AvgReq = tools.Decimal2(summaryData.AvgReq / float64(control.Total))
-	summaryData.AvgRes = tools.Decimal2(summaryData.AvgRes / float64(control.Total))
-	summaryData.AvgDataSize = summaryData.TotalDataSize / control.Total
+	TotalRequest := float64(summaryData.CompleteRequests)
+	if TotalRequest < 1.0 {
+		TotalRequest = 1.0
+	}
+	summaryData.AvgUseTime = tools.Decimal2(summaryData.AvgUseTime / TotalRequest)
+	summaryData.AvgConn = tools.Decimal2(summaryData.AvgConn / TotalRequest)
+	summaryData.AvgDNS = tools.Decimal2(summaryData.AvgDNS / TotalRequest)
+	summaryData.AvgDelay = tools.Decimal2(summaryData.AvgDelay / TotalRequest)
+	summaryData.AvgReq = tools.Decimal2(summaryData.AvgReq / TotalRequest)
+	summaryData.AvgRes = tools.Decimal2(summaryData.AvgRes / TotalRequest)
+	summaryData.AvgDataSize = summaryData.TotalDataSize / int(TotalRequest)
 
 	for k, v := range codeDetail {
 		summaryData.CodeDetail[strconv.Itoa(k)] = v
@@ -155,7 +159,7 @@ OutLable:
 
 	t := (float64(control.EndTime-control.StartTime) / 10e8)
 	summaryData.TimeToken = t
-	summaryData.RequestsPerSec = float64(control.Total) / t
+	summaryData.RequestsPerSec = TotalRequest / t
 	summaryData.SuccessRequestsPerSec = float64(summaryData.SuccessRequests) / t
 	sort.Float64s(waitTimes)
 	waitTimesL := float64(len(waitTimes))
