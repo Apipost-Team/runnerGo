@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
-	"os/signal"
 	"runtime"
-	"syscall"
 	"time"
 
 	runnerHttp "github.com/Apipost-Team/runnerGo/http"
@@ -60,8 +57,6 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	go func(cancelFun context.CancelFunc) {
 		fmt.Println("超时时间", control.MaxRunTime)
 		timeChan := time.After(time.Second * time.Duration(control.MaxRunTime))
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGUSR2)
 		for {
 			select {
 			case <-ctx.Done():
@@ -72,7 +67,8 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				fmt.Println("超时关闭")
 				close(urlChanel) //阻止发送数据
 				return
-			case <-signalChan:
+			default:
+				time.Sleep(time.Duration(50) * time.Millisecond)
 				if control.IsCancel {
 					fmt.Println("主动关闭")
 					cancelFun() //取消所有任务
@@ -81,6 +77,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			}
 		}
 	}(cancelFun)
+
 	defer cancelFun() //主动取消
 
 	//设置并发任务消费

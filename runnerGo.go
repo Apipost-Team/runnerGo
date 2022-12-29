@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"syscall"
 
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
@@ -33,7 +32,6 @@ func main() {
 							control.IsCancel = true //主动设置为取消
 						}
 					}
-					syscall.Kill(syscall.Getpid(), syscall.SIGUSR2) //发送通知
 					ws.Close()
 					break
 				}
@@ -58,7 +56,6 @@ func main() {
 					}
 
 					control.IsCancel = true
-					syscall.Kill(syscall.Getpid(), syscall.SIGUSR2) //发送通知
 					continue
 				}
 
