@@ -65,7 +65,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				return
 			case <-timeChan:
 				fmt.Println("超时关闭")
-				close(urlChanel) //阻止发送数据
+				cancelFun() //取消所有任务
 				return
 			default:
 				time.Sleep(time.Duration(50) * time.Millisecond)
