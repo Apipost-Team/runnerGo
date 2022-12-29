@@ -49,17 +49,6 @@ jobs:
     - name: Build liunx arm64
       run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o runnerGo_linux_arm64 runnerGo.go
 
-    - name: Run UPX
-      uses: crazy-max/ghaction-upx@v2
-      with:
-        version: latest
-        files: |
-          runnerGo_win_x64.exe
-          runnerGo_win_x32.exe
-          runnerGo_mac_x64
-          runnerGo_linux_x64
-        args: -9
-
     - name: Upload
       uses: softprops/action-gh-release@v1
       with:
