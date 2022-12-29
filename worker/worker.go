@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	runnerHttp "github.com/Apipost-Team/runnerGo/http"
@@ -35,6 +38,13 @@ func OpenUrl(url string) error {
 }
 
 func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendChan chan<- string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("执行任务出错,忽略退出", r)
+			msg := fmt.Sprintf("\"code\":501, \"message\": \"%q\", \"data\":{}}", r)
+			sendChan <- msg
+		}
+	}()
 	//control  初始化
 	control.StartTime = int(tools.GetNowUnixNano())
 	control.EndTime = control.StartTime
@@ -50,18 +60,19 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	go func(cancelFun context.CancelFunc) {
 		fmt.Println("超时时间", control.MaxRunTime)
 		timeChan := time.After(time.Second * time.Duration(control.MaxRunTime))
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, syscall.SIGUSR2)
 		for {
 			select {
 			case <-ctx.Done():
-				close(urlChanel) //关闭家里
+				close(urlChanel) //阻止发送数据
 				fmt.Println("任务结束")
 				return
 			case <-timeChan:
 				fmt.Println("超时关闭")
 				close(urlChanel) //阻止发送数据
 				return
-			default:
-				time.Sleep(time.Duration(50) * time.Millisecond)
+			case <-signalChan:
 				if control.IsCancel {
 					fmt.Println("主动关闭")
 					cancelFun() //取消所有任务
@@ -70,7 +81,6 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			}
 		}
 	}(cancelFun)
-
 	defer cancelFun() //主动取消
 
 	//设置并发任务消费
@@ -80,6 +90,12 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 
 	//添加任务呢
 	go func(urlChanel chan<- runnerHttp.HarRequestType, ctx context.Context) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("添加任务失败,忽略退出", r)
+			}
+		}()
+
 		doneChan := ctx.Done()
 		for i := 0; i < control.Total; i++ {
 			select {
@@ -109,16 +125,21 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 }
 
 func doWork(control tools.ControlData, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("执行任务出错,忽略退出", r)
+		}
+	}()
 	doneChan := ctx.Done()
 
 	//初始化 httpclient
 	client := &http.Client{
-		Transport: &http.Transport{
-			MaxConnsPerHost:     control.C + 128,
-			MaxIdleConnsPerHost: control.C + 128,
-			DisableKeepAlives:   false,
-			DisableCompression:  false,
-		},
+		// Transport: &http.Transport{
+		// 	// MaxConnsPerHost:     control.C + 1,
+		// 	// MaxIdleConnsPerHost: control.C + 128,
+		// 	DisableKeepAlives:  false,
+		// 	DisableCompression: false,
+		// },
 		Timeout: time.Duration(control.TimeOut) * time.Second,
 	}
 
