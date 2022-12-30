@@ -50,7 +50,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	defer func() { control.IsRunning = false }() //设置为执行完成
 
 	var urlChanel = make(chan runnerHttp.HarRequestType, 10) //url任务列表,带缓冲
-	var resultChanel = make(chan summary.Res, 10)            //返回结果列表，带缓冲
+	var resultChanel = make(chan summary.Res, 20)            //返回结果列表，带缓冲
 
 	ctx, cancelFun := context.WithCancel(context.Background()) //主动取消
 	//注册取消操作
@@ -60,10 +60,13 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		for {
 			select {
 			case <-ctx.Done():
-				close(urlChanel) //阻止发送数据
+				close(urlChanel)    //阻止发送数据
+				close(resultChanel) //阻止发送数据
 				fmt.Println("任务结束")
 				return
 			case <-timeChan:
+				close(urlChanel)    //阻止发送数据
+				close(resultChanel) //阻止发送数据
 				fmt.Println("超时关闭")
 				cancelFun() //取消所有任务
 				return
@@ -71,18 +74,27 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				time.Sleep(time.Duration(50) * time.Millisecond)
 				if control.IsCancel {
 					fmt.Println("主动关闭")
-					cancelFun() //取消所有任务
+					close(urlChanel)    //阻止发送数据
+					close(resultChanel) //阻止发送数据
+					cancelFun()         //取消所有任务
 					return
 				}
 			}
 		}
 	}(cancelFun)
-
 	defer cancelFun() //主动取消
 
-	//设置并发任务消费
+	//设置并发任务消费,需要连接池
+	tr := &http.Transport{
+		MaxConnsPerHost: 2000, //限定2k连接
+		IdleConnTimeout: 2 * time.Second,
+		// MaxIdleConnsPerHost: control.C + 128,
+		DisableKeepAlives:  false,
+		DisableCompression: false,
+	}
+
 	for i := 0; i < control.C; i++ {
-		go doWork(*control, urlChanel, resultChanel, ctx)
+		go doWork(*control, tr, urlChanel, resultChanel, ctx)
 	}
 
 	//添加任务呢
@@ -98,7 +110,6 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			select {
 			case <-doneChan:
 				fmt.Println("关闭任务发送")
-				close(urlChanel)
 				return
 			default:
 				urlChanel <- data
@@ -121,7 +132,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 
 }
 
-func doWork(control tools.ControlData, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, ctx context.Context) {
+func doWork(control tools.ControlData, tr *http.Transport, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("执行任务出错,忽略退出", r)
@@ -131,13 +142,8 @@ func doWork(control tools.ControlData, urlChanel <-chan runnerHttp.HarRequestTyp
 
 	//初始化 httpclient
 	client := &http.Client{
-		// Transport: &http.Transport{
-		// 	// MaxConnsPerHost:     control.C + 1,
-		// 	// MaxIdleConnsPerHost: control.C + 128,
-		// 	DisableKeepAlives:  false,
-		// 	DisableCompression: false,
-		// },
-		Timeout: time.Duration(control.TimeOut) * time.Second,
+		Transport: tr,
+		Timeout:   time.Duration(control.TimeOut) * time.Second,
 	}
 
 	for { // for 循环逐个执行 URL
