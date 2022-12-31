@@ -1,12 +1,12 @@
 package worker
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os/exec"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	runnerHttp "github.com/Apipost-Team/runnerGo/http"
@@ -35,6 +35,45 @@ func OpenUrl(url string) error {
 }
 
 func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendChan chan<- string) {
+	//control  初始化
+	control.StartTime = int(tools.GetNowUnixNano())
+	control.EndTime = control.StartTime
+	control.IsRunning = true //设置为启动
+	control.IsCancel = false //设置为取消
+	control.WorkCnt = 0
+
+	var urlChanel = make(chan runnerHttp.HarRequestType, 8) //8个url任务列表,带缓冲
+	var resultChanel = make(chan summary.Res, 16)           //返回结果列表，带缓冲
+
+	defer func() {
+		control.IsRunning = false
+		//关闭所有通道，强制释放协程序,统一结束时候是否
+		close(urlChanel) //关闭url任务发送，清理进程
+		//清理resultChanel
+		if control.WorkCnt > 2 {
+			waitTimerChan := time.NewTimer(100 * time.Millisecond)
+			preWorkCnt := control.WorkCnt
+		OutClean:
+			for control.WorkCnt > 2 {
+				select {
+				case <-resultChanel:
+					<-resultChanel //结束进程清理，唯一消耗方，不会阻塞
+					continue
+
+				case <-waitTimerChan.C:
+					//定时检查work是否在减少，没有就直接退出
+					if control.WorkCnt < preWorkCnt {
+						preWorkCnt = control.WorkCnt //记录现在的数量
+						continue
+					}
+					break OutClean
+				}
+			}
+		}
+		close(resultChanel)
+		fmt.Println("action main quit", *control)
+	}() //设置为执行完成
+
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("执行任务出错,忽略退出", r)
@@ -42,83 +81,61 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			sendChan <- msg
 		}
 	}()
-	//control  初始化
-	control.StartTime = int(tools.GetNowUnixNano())
-	control.EndTime = control.StartTime
-	control.IsRunning = true //设置为启动
 
-	defer func() { control.IsRunning = false }() //设置为执行完成
-
-	var urlChanel = make(chan runnerHttp.HarRequestType, 10) //url任务列表,带缓冲
-	var resultChanel = make(chan summary.Res, 20)            //返回结果列表，带缓冲
-
-	ctx, cancelFun := context.WithCancel(context.Background()) //主动取消
 	//注册取消操作
-	go func(cancelFun context.CancelFunc) {
-		fmt.Println("超时时间", control.MaxRunTime)
+	go func(control *tools.ControlData) {
+		fmt.Println("run timeout", control.MaxRunTime)
 		timeChan := time.After(time.Second * time.Duration(control.MaxRunTime))
+		timerChan := time.NewTimer(50 * time.Millisecond)
+	OutCancel:
 		for {
 			select {
-			case <-ctx.Done():
-				close(urlChanel)    //阻止发送数据
-				close(resultChanel) //阻止发送数据
-				fmt.Println("任务结束")
-				return
 			case <-timeChan:
-				close(urlChanel)    //阻止发送数据
-				close(resultChanel) //阻止发送数据
-				fmt.Println("超时关闭")
-				cancelFun() //取消所有任务
-				return
-			default:
-				time.Sleep(time.Duration(50) * time.Millisecond)
-				if control.IsCancel {
-					fmt.Println("主动关闭")
-					close(urlChanel)    //阻止发送数据
-					close(resultChanel) //阻止发送数据
-					cancelFun()         //取消所有任务
-					return
+				control.IsCancel = true //设置为取消
+				fmt.Println("action timout")
+				break OutCancel
+			case <-timerChan.C:
+				if control.IsCancel || (!control.IsRunning) { //取消或者支持完成直接退出
+					fmt.Println("action cancel")
+					break OutCancel
 				}
 			}
 		}
-	}(cancelFun)
-	defer cancelFun() //主动取消
+	}(control)
 
 	//设置并发任务消费,需要连接池
 	tr := &http.Transport{
-		MaxConnsPerHost: 2000, //限定2k连接
-		IdleConnTimeout: 2 * time.Second,
+		//MaxConnsPerHost: 2000, //限定2k连接
+		MaxConnsPerHost: 0,
+		IdleConnTimeout: 10 * time.Second,
 		// MaxIdleConnsPerHost: control.C + 128,
 		DisableKeepAlives:  false,
 		DisableCompression: false,
 	}
 
 	for i := 0; i < control.C; i++ {
-		go doWork(*control, tr, urlChanel, resultChanel, ctx)
+		go doWork(control, tr, i, urlChanel, resultChanel)
 	}
 
 	//添加任务呢
-	go func(urlChanel chan<- runnerHttp.HarRequestType, ctx context.Context) {
+	go func(urlChanel chan<- runnerHttp.HarRequestType, control *tools.ControlData) {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("添加任务失败,忽略退出", r)
+				fmt.Println("error add task", r)
 			}
 		}()
 
-		doneChan := ctx.Done()
 		for i := 0; i < control.Total; i++ {
-			select {
-			case <-doneChan:
-				fmt.Println("关闭任务发送")
-				return
-			default:
-				urlChanel <- data
+			if control.IsCancel {
+				fmt.Println("action add task quit")
+				break
 			}
+			urlChanel <- data
 		}
-	}(urlChanel, ctx)
+	}(urlChanel, control)
 
 	//统计结果
-	res := summary.HandleRes(*control, resultChanel, ctx)
+	res := summary.HandleRes(control, resultChanel)
 	jsonRes, err := json.Marshal(res)
 
 	var msg string
@@ -129,16 +146,18 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	}
 
 	sendChan <- msg
-
 }
 
-func doWork(control tools.ControlData, tr *http.Transport, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, ctx context.Context) {
+func doWork(control *tools.ControlData, tr *http.Transport, i int, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res) {
+	atomic.AddInt32(&(control.WorkCnt), 1) //进程数加1
+	defer func() {
+		atomic.AddInt32(&(control.WorkCnt), -1) //工作线程减1
+	}()
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("执行任务出错,忽略退出", r)
+			fmt.Println("work error", i, r)
 		}
 	}()
-	doneChan := ctx.Done()
 
 	//初始化 httpclient
 	client := &http.Client{
@@ -147,13 +166,12 @@ func doWork(control tools.ControlData, tr *http.Transport, urlChanel <-chan runn
 	}
 
 	for { // for 循环逐个执行 URL
-		select {
-		case <-doneChan:
-			return
-		default:
+		if control.IsCancel {
+			break
+		} else {
 			data, ok := <-urlChanel
 			if !ok {
-				return
+				break
 			}
 			resultChanel <- runnerHttp.Do(client, data)
 		}

@@ -11,4 +11,5 @@ type ControlData struct {
 	MaxRunTime int    //最大运行时间
 	IsCancel   bool   //是否主动取消
 	IsRunning  bool   //是否还在运行
+	WorkCnt    int32  //运行的进程数量
 }

@@ -1,8 +1,6 @@
 package summary
 
 import (
-	"context"
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -62,7 +60,7 @@ type SummaryData struct {
 	MinRes   float64
 }
 
-func HandleRes(control tools.ControlData, resultChanel <-chan Res, ctx context.Context) SummaryData {
+func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData {
 	var (
 		// RunOverSignal = make(chan int, 1)
 		codeDetail  = make(map[int]int)
@@ -81,17 +79,15 @@ func HandleRes(control tools.ControlData, resultChanel <-chan Res, ctx context.C
 		waitTimes = make([]float64, 0, control.Total)
 	)
 
-	doneChan := ctx.Done()
-
-OutLable:
 	for {
-		select {
-		case <-doneChan:
-			fmt.Println("统计退出")
-			break OutLable
-		default:
-
+		if control.IsCancel {
+			break
+			// if control.WorkCnt < 4 {
+			// 	//执行取消，并且数据处理小于4，等大部分工作进程结束再退出
+			// 	break
+			// }
 		}
+
 		res, ok := <-resultChanel
 		if !ok {
 			break
@@ -100,7 +96,7 @@ OutLable:
 		summaryData.TotalDataSize += res.Size
 
 		if summaryData.CompleteRequests >= control.Total {
-			break OutLable
+			break
 		}
 		code := res.Code
 		if _, ok := codeDetail[code]; ok {

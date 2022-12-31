@@ -8,10 +8,11 @@ import (
 	"os"
 	"strings"
 
+	// _ "net/http/pprof"
+
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
 	"golang.org/x/net/websocket"
-	// _ "net/http/pprof"
 )
 
 var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
