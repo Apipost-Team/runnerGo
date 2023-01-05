@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
 	// _ "net/http/pprof"
@@ -52,7 +53,7 @@ func main() {
 					}
 
 					if !control.IsRunning {
-						msg := `{"code":501, "message":"target_id 任务已结束，无需终止", "data":{}}`
+						msg := `{"code":501, "message":"target_id 任务已结束，无需终止", "data":{"Target_id":"` + target_id + `"}}`
 						sendChan <- msg
 						continue
 					}
@@ -66,7 +67,7 @@ func main() {
 					target_id := body[6:]
 					control, ok := controlMap[target_id]
 					if !ok {
-						msg := `{"code":501, "message":"target_id 不存在", "data":{}}`
+						msg := `{"code":501, "message":"target_id 不存在", "data":{"Target_id":"` + target_id + `"}}`
 						sendChan <- msg
 						continue
 					}
@@ -110,10 +111,10 @@ func main() {
 					control.TimeOut = control.MaxRunTime //超时时间不能超过总时间
 				}
 
-				fmt.Println(control)
+				log.Println(control)
 
 				if control.Total <= 0 {
-					msg := `{"code":501, "message":"并发数或者循环次数至少为1", "data":{}}`
+					msg := `{"code":501, "message":"并发数或者循环次数至少为1", "data":{"Target_id":"` + control.Target_id + `"}}`
 					sendChan <- msg
 					continue
 				}
@@ -128,7 +129,7 @@ func main() {
 				}
 
 				if isForbidden {
-					msg := `{"code":301, "message":"禁止请求的URL", "data":{}}`
+					msg := `{"code":301, "message":"禁止请求的URL", "data":{"Target_id":"` + control.Target_id + `"}}`
 					sendChan <- msg
 					continue
 				}
@@ -136,10 +137,19 @@ func main() {
 				if len(control.Target_id) > 0 {
 					newControl, ok := controlMap[control.Target_id]
 					if ok && newControl.IsRunning {
-						msg := `{"code":301, "message":"相同的target_id任务还在执行，请等上次执行完成", "data":{}}`
+						msg := `{"code":301, "message":"相同的target_id任务还在执行，请等上次执行完成", "data":{"Target_id":"` + control.Target_id + `"}}`
 						sendChan <- msg
 						continue
 					}
+
+					//检查现在情况
+					ng := runtime.NumGoroutine()
+					if ng > 30000 {
+						msg := `{"code":302, "message":"压测负载太高，请稍后重试", "data":{"Target_id":"` + control.Target_id + `"}}`
+						sendChan <- msg
+						continue
+					}
+
 					controlMap[control.Target_id] = &control
 				}
 				// 开始压测,改异步

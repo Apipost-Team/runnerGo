@@ -3,6 +3,7 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os/exec"
 	"runtime"
@@ -53,11 +54,12 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		if control.WorkCnt > 2 {
 			waitTimerChan := time.NewTimer(100 * time.Millisecond)
 			preWorkCnt := control.WorkCnt
+
 		OutClean:
 			for control.WorkCnt > 2 {
 				select {
-				case <-resultChanel:
-					<-resultChanel //结束进程清理，唯一消耗方，不会阻塞
+				case res := <-resultChanel: //结束进程清理，唯一消耗方，不会阻塞
+					_ = res //忽略错误
 					continue
 
 				case <-waitTimerChan.C:
@@ -71,20 +73,20 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			}
 		}
 		close(resultChanel)
-		fmt.Println("action main quit", *control)
+		log.Println("action main quit", *control)
 	}() //设置为执行完成
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("执行任务出错,忽略退出", r)
-			msg := fmt.Sprintf("\"code\":501, \"message\": \"%q\", \"data\":{}}", r)
+			log.Println("执行任务出错,忽略退出", r)
+			msg := fmt.Sprintf("\"code\":501, \"message\": \"%q\", \"data\":{\"Target_id\":\"%s\"}}", r, control.Target_id)
 			sendChan <- msg
 		}
 	}()
 
 	//注册取消操作
 	go func(control *tools.ControlData) {
-		fmt.Println("run timeout", control.MaxRunTime)
+		log.Println("run timeout", control.MaxRunTime)
 		timeChan := time.After(time.Second * time.Duration(control.MaxRunTime))
 		timerChan := time.NewTimer(50 * time.Millisecond)
 	OutCancel:
@@ -92,11 +94,11 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			select {
 			case <-timeChan:
 				control.IsCancel = true //设置为取消
-				fmt.Println("action timout")
+				log.Println("action timout")
 				break OutCancel
 			case <-timerChan.C:
 				if control.IsCancel || (!control.IsRunning) { //取消或者支持完成直接退出
-					fmt.Println("action cancel")
+					log.Println("action cancel")
 					break OutCancel
 				}
 			}
@@ -121,13 +123,13 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	go func(urlChanel chan<- runnerHttp.HarRequestType, control *tools.ControlData) {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("error add task", r)
+				log.Println("error add task", r)
 			}
 		}()
 
 		for i := 0; i < control.Total; i++ {
 			if control.IsCancel {
-				fmt.Println("action add task quit")
+				log.Println("action add task quit")
 				break
 			}
 			urlChanel <- data
@@ -140,7 +142,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 
 	var msg string
 	if err != nil {
-		msg = `{"code":501, "message":"` + string(err.Error()) + `", "data":{}}`
+		msg = `{"code":501, "message":"` + string(err.Error()) + `", "data":{"Target_id":"` + control.Target_id + `"}}`
 	} else {
 		msg = `{"code":200, "message":"success", "data":` + string(jsonRes) + `}`
 	}
@@ -155,7 +157,7 @@ func doWork(control *tools.ControlData, tr *http.Transport, i int, urlChanel <-c
 	}()
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("work error", i, r)
+			log.Println("work error", i, r)
 		}
 	}()
 
