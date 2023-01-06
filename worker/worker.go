@@ -52,7 +52,6 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		close(urlChanel) //关闭url任务发送，清理进程
 		//清理resultChanel
 		if control.WorkCnt > 2 {
-			waitTimerChan := time.NewTimer(100 * time.Millisecond)
 			preWorkCnt := control.WorkCnt
 
 		OutClean:
@@ -62,7 +61,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 					_ = res //忽略错误
 					continue
 
-				case <-waitTimerChan.C:
+				case <-time.After(100 * time.Millisecond):
 					//定时检查work是否在减少，没有就直接退出
 					if control.WorkCnt < preWorkCnt {
 						preWorkCnt = control.WorkCnt //记录现在的数量
@@ -88,7 +87,6 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	go func(control *tools.ControlData) {
 		log.Println("run timeout", control.MaxRunTime)
 		timeChan := time.After(time.Second * time.Duration(control.MaxRunTime))
-		timerChan := time.NewTimer(50 * time.Millisecond)
 	OutCancel:
 		for {
 			select {
@@ -96,9 +94,14 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				control.IsCancel = true //设置为取消
 				log.Println("action timout")
 				break OutCancel
-			case <-timerChan.C:
+			case <-time.After(50 * time.Millisecond):
 				if control.IsCancel || (!control.IsRunning) { //取消或者支持完成直接退出
-					log.Println("action cancel")
+					if control.IsCancel {
+						log.Println("action cancel")
+					} else {
+						log.Println("action end")
+					}
+
 					break OutCancel
 				}
 			}

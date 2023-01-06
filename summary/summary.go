@@ -88,6 +88,11 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 			// }
 		}
 
+		if summaryData.CompleteRequests >= control.Total {
+			//数量到达退出
+			break
+		}
+
 		res, ok := <-resultChanel
 		if !ok {
 			break
@@ -95,9 +100,6 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
-		if summaryData.CompleteRequests >= control.Total {
-			break
-		}
 		code := res.Code
 		if _, ok := codeDetail[code]; ok {
 			codeDetail[code]++

@@ -47,13 +47,13 @@ func main() {
 					target_id := body[7:]
 					control, ok := controlMap[target_id]
 					if !ok {
-						msg := `{"code":501, "message":"target_id 不存在", "data":{}}`
+						msg := `{"code":501, "message":"任务不存在，无需取消", "data":{}}`
 						sendChan <- msg
 						continue
 					}
 
 					if !control.IsRunning {
-						msg := `{"code":501, "message":"target_id 任务已结束，无需终止", "data":{"Target_id":"` + target_id + `"}}`
+						msg := `{"code":501, "message":"任务已结束，无需终止", "data":{"Target_id":"` + target_id + `"}}`
 						sendChan <- msg
 						continue
 					}
@@ -67,7 +67,7 @@ func main() {
 					target_id := body[6:]
 					control, ok := controlMap[target_id]
 					if !ok {
-						msg := `{"code":501, "message":"target_id 不存在", "data":{"Target_id":"` + target_id + `"}}`
+						msg := `{"code":501, "message":"任务不存在", "data":{"Target_id":"` + target_id + `"}}`
 						sendChan <- msg
 						continue
 					}
