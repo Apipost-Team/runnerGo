@@ -47,7 +47,7 @@ func main() {
 					target_id := body[7:]
 					control, ok := controlMap[target_id]
 					if !ok {
-						msg := `{"code":501, "message":"任务不存在，无需取消", "data":{}}`
+						msg := `{"code":501, "message":"任务不存在，无需取消", "data":{"Target_id":"` + target_id + `"}}`
 						sendChan <- msg
 						continue
 					}

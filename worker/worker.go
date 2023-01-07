@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -109,13 +110,17 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	}(control)
 
 	//设置并发任务消费,需要连接池
+	defaultCipherSuites := []uint16{0xc02f, 0xc030, 0xc02b, 0xc02c, 0xcca8, 0xcca9, 0xc013, 0xc009,
+		0xc014, 0xc00a, 0x009c, 0x009d, 0x002f, 0x0035, 0xc012, 0x000a}
 	tr := &http.Transport{
-		//MaxConnsPerHost: 2000, //限定2k连接
-		MaxConnsPerHost: 0,
-		IdleConnTimeout: 10 * time.Second,
-		// MaxIdleConnsPerHost: control.C + 128,
+		MaxConnsPerHost:    0,
+		IdleConnTimeout:    20 * time.Second,
 		DisableKeepAlives:  false,
 		DisableCompression: false,
+		TLSClientConfig: &tls.Config{
+			CipherSuites: append(defaultCipherSuites[8:], defaultCipherSuites[:8]...),
+		}, //绕过特征检测
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
 
 	for i := 0; i < control.C; i++ {
