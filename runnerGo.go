@@ -19,6 +19,11 @@ import (
 var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
 
 func main() {
+	http.HandleFunc("/quit", func(w http.ResponseWriter, r *http.Request) {
+		//增加退出代码
+		log.Println("user quit")
+		os.Exit(0)
+	})
 	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
 		var sendChan = make(chan string)
 		defer ws.Close()
