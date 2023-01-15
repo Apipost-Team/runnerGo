@@ -49,6 +49,7 @@ type postDataType struct {
 }
 
 type HarRequestType struct {
+	Seq         int //请求序列
 	Method      string
 	Url         string
 	Mode        string
@@ -82,7 +83,7 @@ func creteHttpClient() *http.Client {
 	return client
 }
 
-func Do(client *http.Client, harStruct HarRequestType) summary.Res {
+func Do(client *http.Client, harStruct HarRequestType) (summary.Res, error) {
 	var code int
 	var size, tmpt int64
 	var dnsStart, connStart, respStart, reqStart, delayStart int64
@@ -228,7 +229,7 @@ func Do(client *http.Client, harStruct HarRequestType) summary.Res {
 			ReqTime:      float64(0),
 			DelayTime:    float64(0),
 			ResTime:      float64(0),
-		}
+		}, newReqErr
 	} else {
 
 		// 设置请求头
@@ -283,10 +284,10 @@ func Do(client *http.Client, harStruct HarRequestType) summary.Res {
 		tStart := tools.GetNowUnixNano()
 
 		//client := HttpClients[rand.Intn(clientsN)]
-		response, err := client.Do(req)
+		response, errDo := client.Do(req)
 
 		tEnd := tools.Now()
-		if response != nil && err == nil {
+		if response != nil && errDo == nil {
 			if response.ContentLength > -1 {
 				size = response.ContentLength
 			} else {
@@ -303,19 +304,20 @@ func Do(client *http.Client, harStruct HarRequestType) summary.Res {
 
 			code = response.StatusCode
 
-			bSize := 32 * 1024
-			if int64(bSize) > size {
-				if size < 1 {
-					bSize = 1
-				} else {
-					bSize = int(size)
-				}
-			}
+			//判断size大于32k，功能未知
+			// bSize := 32 * 1024
+			// if int64(bSize) > size {
+			// 	if size < 1 {
+			// 		bSize = 1
+			// 	} else {
+			// 		bSize = int(size)
+			// 	}
+			// }
 
 			response.Body.Close()
 		} else {
 			code = 503
-			if err, ok := err.(*netulr.Error); ok {
+			if err, ok := errDo.(*netulr.Error); ok {
 				if err.Timeout() {
 					code = 504
 				}
@@ -334,6 +336,6 @@ func Do(client *http.Client, harStruct HarRequestType) summary.Res {
 			ReqTime:      float64(reqDuration / 10e5),
 			DelayTime:    float64(delayDuration / 10e5),
 			ResTime:      float64(respDuration / 10e5),
-		}
+		}, errDo
 	}
 }

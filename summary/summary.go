@@ -80,12 +80,9 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 	)
 
 	for {
-		if control.IsCancel {
+		if control.IsCancel || (!control.IsRunning) {
+			//任务结束，直接退出
 			break
-			// if control.WorkCnt < 4 {
-			// 	//执行取消，并且数据处理小于4，等大部分工作进程结束再退出
-			// 	break
-			// }
 		}
 
 		if summaryData.CompleteRequests >= control.Total {
@@ -100,6 +97,10 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 		summaryData.CompleteRequests++
 		summaryData.TotalDataSize += res.Size
 
+		//同步外部
+		control.Cnt = summaryData.CompleteRequests
+		control.Size = summaryData.TotalDataSize
+
 		code := res.Code
 		if _, ok := codeDetail[code]; ok {
 			codeDetail[code]++
@@ -112,10 +113,12 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 		}
 		if code > 299 || code < 200 {
 			summaryData.FailedRequests++
+			control.FailedCnt = summaryData.FailedRequests //同步错误
 		} else {
 			summaryData.SuccessRequests++
 		}
 		summaryData.AvgUseTime += res.TotalUseTime
+		control.CostTime = summaryData.AvgUseTime //同步总时间
 		summaryData.AvgConn += res.ConnTime
 		summaryData.AvgDNS += res.DNSTime
 		summaryData.AvgDelay += res.DelayTime

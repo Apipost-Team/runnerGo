@@ -24,6 +24,9 @@ func main() {
 		log.Println("user quit")
 		os.Exit(0)
 	})
+	http.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
+		//增加代理发送功能
+	})
 	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
 		var sendChan = make(chan string)
 		defer ws.Close()
@@ -45,6 +48,7 @@ func main() {
 				}
 				//fmt.Println("Received: ", body)
 				if strings.HasPrefix(body, "PING") || strings.HasPrefix(body, "ping") {
+					//处理ping
 					continue
 				}
 				//取消压测target_id, cancel:xxxxxxxxxx
@@ -93,19 +97,28 @@ func main() {
 					os.Exit(0)
 				}
 
+				if strings.HasPrefix(body, "setc:") {
+					//setc:target_id:num  将并发数设置到指定
+					continue
+				}
+
+				//处理发送请求
 				var bodyStruct worker.RawWorkData
 
 				// 解析 har 结构
 				json.Unmarshal([]byte(string(body)), &bodyStruct)
 				control := tools.ControlData{
-					C:          bodyStruct.C,
-					N:          bodyStruct.N,
-					Total:      bodyStruct.C * bodyStruct.N,
-					Target_id:  bodyStruct.Target_id,
-					MaxRunTime: bodyStruct.MaxRunTime, //10分钟
-					IsCancel:   false,
-					IsRunning:  false,
-					TimeOut:    20, //超时时间
+					C:            bodyStruct.C,
+					N:            bodyStruct.N,
+					Total:        bodyStruct.C * bodyStruct.N,
+					Target_id:    bodyStruct.Target_id,
+					MaxRunTime:   bodyStruct.MaxRunTime, //10分钟
+					IsCancel:     false,
+					IsRunning:    false,
+					TimeOut:      20,                    //超时时间
+					LogType:      bodyStruct.LogType,    //是否开启日志
+					ReportTime:   bodyStruct.ReportTime, //是否定时汇报日志
+					WorkTagetCnt: 0,                     //默认设置为0
 				}
 
 				if control.MaxRunTime < 1 {
