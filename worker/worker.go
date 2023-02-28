@@ -62,7 +62,8 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		DisableKeepAlives:  false,
 		DisableCompression: false,
 		TLSClientConfig: &tls.Config{
-			CipherSuites: append(defaultCipherSuites[8:], defaultCipherSuites[:8]...),
+			CipherSuites:       append(defaultCipherSuites[8:], defaultCipherSuites[:8]...),
+			InsecureSkipVerify: true,
 		}, //绕过特征检测
 		TLSHandshakeTimeout: 10 * time.Second,
 	}
