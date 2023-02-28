@@ -211,7 +211,13 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			}
 		}()
 
-		for i := 0; i < control.Total; i++ {
+		is_forever := false
+		if control.Total <= 0 && control.MaxRunTime > 0 {
+			is_forever = true //永久执行
+		}
+
+		//按次数循环模式
+		for i := 0; is_forever || i < control.Total; i++ {
 			if control.IsCancel || (!control.IsRunning) {
 				log.Println("action add task quit")
 				break
@@ -220,6 +226,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			data.Seq = i //设置请求序列
 			urlChanel <- data
 		}
+
 	}(urlChanel, data, control)
 
 	//统计结果
@@ -283,4 +290,13 @@ func doWork(control *tools.ControlData, tr *http.Transport, workId int, urlChane
 			resultChanel <- result
 		}
 	}
+}
+
+func Request(p runnerHttp.HarRequestType) {
+	//初始化 httpclient
+	// client := &http.Client{
+	// 	Timeout: time.Duration(10) * time.Second,
+	// }
+
+	//result, err := runnerHttp.Do(client, p)
 }

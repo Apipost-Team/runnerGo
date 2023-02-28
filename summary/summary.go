@@ -85,7 +85,7 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 			break
 		}
 
-		if summaryData.CompleteRequests >= control.Total {
+		if control.Total > 0 && summaryData.CompleteRequests >= control.Total {
 			//数量到达退出
 			break
 		}

@@ -3,17 +3,21 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
-	// _ "net/http/pprof"
+	//_ "net/http/pprof"
 
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
 	"golang.org/x/net/websocket"
+
+	runnerHttp "github.com/Apipost-Team/runnerGo/http"
 )
 
 var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
@@ -26,6 +30,21 @@ func main() {
 	})
 	http.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
 		//增加代理发送功能
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Println(string(body))
+		var p runnerHttp.HarRequestType
+		err = json.Unmarshal(body, &p)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Println(p)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("{}"))
 	})
 	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
 		var sendChan = make(chan string)
@@ -76,7 +95,7 @@ func main() {
 					target_id := body[6:]
 					control, ok := controlMap[target_id]
 					if !ok {
-						msg := `{"code":501, "message":"任务不存在", "data":{"Target_id":"` + target_id + `"}}`
+						msg := `{"code":502, "message":"任务不存在", "data":{"Target_id":"` + target_id + `"}}`
 						sendChan <- msg
 						continue
 					}
@@ -87,7 +106,7 @@ func main() {
 						continue
 					}
 
-					msg := `{"code":200, "message":"success", "data":` + string(jsonRes) + `}`
+					msg := `{"code":201, "message":"success", "data":` + string(jsonRes) + `}`
 					sendChan <- msg
 					continue
 				}
@@ -99,6 +118,33 @@ func main() {
 
 				if strings.HasPrefix(body, "setc:") {
 					//setc:target_id:num  将并发数设置到指定
+					tmpArr := strings.Split(body, ":")
+					if len(tmpArr) != 3 {
+						msg := `{"code":504, "message":"setc invalid", "data":''}`
+						sendChan <- msg
+						continue
+					}
+					target_id := tmpArr[1]
+					WorkTagetCnt, err := strconv.Atoi(tmpArr[2])
+					if err != nil {
+						msg := `{"code":501, "message":"num is invalid", "data":{"Target_id":"` + target_id + `"}}`
+						sendChan <- msg
+						continue
+					}
+					control, ok := controlMap[target_id]
+					if !ok {
+						msg := `{"code":501, "message":"任务不存在，无法设置", "data":{"Target_id":"` + target_id + `"}}`
+						sendChan <- msg
+						continue
+					}
+
+					if !control.IsRunning {
+						msg := `{"code":501, "message":"任务已结束，无法设置", "data":{"Target_id":"` + target_id + `"}}`
+						sendChan <- msg
+						continue
+					}
+
+					control.WorkTagetCnt = int32(WorkTagetCnt) //设置数量
 					continue
 				}
 
@@ -131,8 +177,8 @@ func main() {
 
 				log.Println(control)
 
-				if control.Total <= 0 {
-					msg := `{"code":501, "message":"并发数或者循环次数至少为1", "data":{"Target_id":"` + control.Target_id + `"}}`
+				if control.Total <= 0 && control.MaxRunTime <= 0 {
+					msg := `{"code":501, "message":"并发数或者执行时间不能为0", "data":{"Target_id":"` + control.Target_id + `"}}`
 					sendChan <- msg
 					continue
 				}
