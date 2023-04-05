@@ -13,12 +13,8 @@ RunnerGo is designed to be the simplest way possible to make stress test.
 
 ```
 Options:
-    -n 	requests     Number of requests to perform
-    -c 	concurrency  Number of multiple requests to make at a time
-    -data HAR format data for request. See http://www.softwareishard.com/blog/har-12-spec/#request
-    -t  Timeout for each request in seconds, Default is 60
-    -h  This help
-    -v  Show verison
+    -p 	server port     
+    -a 	is auto exit
 ```
 ## Request Para
 
@@ -27,9 +23,11 @@ Options:
     "c": 2,
     "n": 2,
     "target_id":"",
+    "report_time":0,
+    "log_type":0,
     "data": {
         "method": "POST",
-        "url": "http://echo.apipost.com/get.php",
+        "url": "http://www.baidu.com",
         "mode": "urlencoded",
         "headers": [
             {
@@ -109,3 +107,10 @@ Options:
     }
 }
 ```
+
+## demo
+https://runnergo.apipost.cn/  
+ ![示例图片](https://apipost.oss-cn-beijing.aliyuncs.com/cdn/runnergo/runnergo_demo.png) 
+
+ 本机需要先运行编译后的程序。可以在Releases中下载最新的编译好的程序
+

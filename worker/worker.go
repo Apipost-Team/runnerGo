@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -49,9 +50,10 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	control.IsCancel = false //设置为取消
 	control.WorkCnt = 0      //设置工作进程为0
 
-	var urlChanel = make(chan runnerHttp.HarRequestType, 8) //8个url任务列表,带缓冲
-	var resultChanel = make(chan summary.Res, 16)           //返回结果列表，带缓冲
-	var rLog *log.Logger                                    //日志文件
+	var urlChanel = make(chan runnerHttp.HarRequestType, 8)    //8个url任务列表,带缓冲
+	var resultChanel = make(chan summary.Res, 16)              //返回结果列表，带缓冲
+	var rLog *log.Logger                                       //日志文件
+	ctx, cancelAll := context.WithCancel(context.Background()) //控制其他进程退出
 
 	//设置并发任务消费,需要连接池
 	defaultCipherSuites := []uint16{0xc02f, 0xc030, 0xc02b, 0xc02c, 0xcca8, 0xcca9, 0xc013, 0xc009,
@@ -80,30 +82,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	//工作接收清理工作
 	defer func() {
 		control.IsRunning = false
-		//关闭所有通道，强制释放协程序,统一结束时候是否
-		close(urlChanel) //关闭url任务发送，清理进程
-		//清理resultChanel
-		if control.WorkCnt > 2 {
-			preWorkCnt := control.WorkCnt
-
-		OutClean:
-			for control.WorkCnt > 2 {
-				select {
-				case res := <-resultChanel: //结束进程清理，唯一消耗方，不会阻塞
-					_ = res //忽略错误
-					continue
-
-				case <-time.After(100 * time.Millisecond):
-					//定时检查work是否在减少，没有就直接退出
-					if control.WorkCnt < preWorkCnt {
-						preWorkCnt = control.WorkCnt //记录现在的数量
-						continue
-					}
-					break OutClean
-				}
-			}
-		}
-		close(resultChanel)
+		cancelAll() //取消所有任务
 		log.Println("action main quit", *control)
 	}() //设置为执行完成
 
@@ -122,91 +101,17 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	}
 
 	//运行是控制，取消，超时，控制进程数量，定时汇报
-	go func(control *tools.ControlData) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println("error control", r)
-			}
-		}()
-
-		timeChan := time.After(time.Second * time.Duration(control.MaxRunTime)) //超时设置
-		checkCnt := 0                                                           //检查次数
-		checkInterval := 50                                                     //检查间隔
-		reportInterval := 0                                                     //反馈间隔
-		if control.ReportTime > 0 {
-			reportInterval = int(float64(control.ReportTime)/float64(checkInterval) + 0.5) //向上取整数
-			if reportInterval < 1 {
-				reportInterval = 1 //report时间最小50毫秒
-			}
-		}
-
-		log.Println("run timeout", control.MaxRunTime, "reportInterval", reportInterval, "reportTime", control.ReportTime)
-
-	OutCancel:
-		for {
-			select {
-			case <-timeChan:
-				control.IsCancel = true //设置为取消
-				log.Println("action timout")
-				break OutCancel
-			case <-time.After(time.Duration(checkInterval) * time.Millisecond):
-				checkCnt++ //检查次数+1
-				//确定退出
-				if control.IsCancel || (!control.IsRunning) { //取消或者支持完成直接退出
-					if control.IsCancel {
-						log.Println("action cancel")
-					} else {
-						log.Println("action end")
-					}
-					break OutCancel
-				}
-
-				//检查report
-				if reportInterval > 0 && (checkCnt%reportInterval == 0) {
-					jsonRes, err := json.Marshal(control)
-					if err != nil {
-						log.Println(err.Error())
-						continue
-					}
-
-					msg := `{"code":202, "message":"success", "data":` + string(jsonRes) + `}`
-					sendChan <- msg //发送统计信息
-				}
-
-				//检查是否需要增加进程
-				if control.WorkTagetCnt > 0 {
-					diffCnt := int(control.WorkTagetCnt - control.WorkCnt) //目标和实际差距
-					if diffCnt > 0 {
-						//增加进程
-						for i := 0; i < diffCnt; i++ {
-							go doWork(control, tr, i+int(control.WorkTagetCnt), urlChanel, resultChanel, rLog)
-						}
-						control.WorkTagetCnt = 0 //启动完成，标记
-					} else if diffCnt < 0 {
-						//减少进程
-						diffCnt = -diffCnt
-
-						for i := 0; i < diffCnt; i++ {
-							emptyData := runnerHttp.HarRequestType{}
-							emptyData.Seq = -1
-							urlChanel <- emptyData
-						}
-						control.WorkTagetCnt = 0 //可能阻塞,标记
-					}
-				}
-
-			}
-		}
-	}(control)
+	go doControl(control, ctx, sendChan, tr, urlChanel, resultChanel, rLog)
 
 	//启动工作进程
 	for i := 0; i < control.C; i++ {
-		go doWork(control, tr, i, urlChanel, resultChanel, rLog)
+		go doWork(control, ctx, tr, i, urlChanel, resultChanel, rLog)
 	}
 
 	//创建工作任务
-	go func(urlChanel chan<- runnerHttp.HarRequestType, data runnerHttp.HarRequestType, control *tools.ControlData) {
+	go func(urlChanel chan<- runnerHttp.HarRequestType, data runnerHttp.HarRequestType, control *tools.ControlData, ctx context.Context) {
 		defer func() {
+			close(urlChanel) //关闭请求产生
 			if r := recover(); r != nil {
 				log.Println("error add task", r)
 			}
@@ -218,6 +123,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		}
 
 		//按次数循环模式
+
 		for i := 0; is_forever || i < control.Total; i++ {
 			if control.IsCancel || (!control.IsRunning) {
 				log.Println("action add task quit")
@@ -225,10 +131,17 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			}
 
 			data.Seq = i //设置请求序列
-			urlChanel <- data
+			select {
+			case urlChanel <- data:
+				//log.Printf("send data %d", i)
+			case <-ctx.Done():
+				//防止写入死锁
+				log.Println("action reciver exit")
+				return
+			}
 		}
 
-	}(urlChanel, data, control)
+	}(urlChanel, data, control, ctx)
 
 	//统计结果
 	res := summary.HandleRes(control, resultChanel)
@@ -244,8 +157,13 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	sendChan <- msg
 }
 
-func doWork(control *tools.ControlData, tr *http.Transport, workId int, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, rLog *log.Logger) {
+func doWork(control *tools.ControlData, ctx context.Context, tr *http.Transport, workId int, urlChanel <-chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, rLog *log.Logger) {
 	defer func() {
+		if control.WorkCnt < 1 {
+			//最后一个工作进程，清理管道
+			log.Printf("close channel by work %d and workcnt %d", workId, control.WorkCnt)
+			close(resultChanel)
+		}
 		if r := recover(); r != nil {
 			log.Println("work error", workId, r)
 		}
@@ -288,7 +206,90 @@ func doWork(control *tools.ControlData, tr *http.Transport, workId int, urlChane
 				}
 			}
 
-			resultChanel <- result
+			//写入时循环检查
+			select {
+			case resultChanel <- result:
+				break
+			case <-ctx.Done():
+				break
+			}
+		}
+	}
+}
+
+func doControl(control *tools.ControlData, ctx context.Context, sendChan chan<- string, tr *http.Transport, urlChanel chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, rLog *log.Logger) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("error control", r)
+		}
+	}()
+
+	timeChan := time.After(time.Second * time.Duration(control.MaxRunTime)) //超时设置
+	checkCnt := 0                                                           //检查次数
+	checkInterval := 50                                                     //检查间隔
+	reportInterval := 0                                                     //反馈间隔
+	if control.ReportTime > 0 {
+		reportInterval = int(float64(control.ReportTime)/float64(checkInterval) + 0.5) //向上取整数
+		if reportInterval < 1 {
+			reportInterval = 1 //report时间最小50毫秒
+		}
+	}
+
+	log.Println("run timeout", control.MaxRunTime, "reportInterval", reportInterval, "reportTime", control.ReportTime)
+
+OutCancel:
+	for {
+		select {
+		case <-timeChan:
+			control.IsCancel = true //设置为取消
+			log.Println("action timout")
+			break OutCancel
+		case <-time.After(time.Duration(checkInterval) * time.Millisecond):
+			checkCnt++ //检查次数+1
+			//确定退出
+			if control.IsCancel || (!control.IsRunning) { //取消或者支持完成直接退出
+				if control.IsCancel {
+					log.Println("action cancel")
+				} else {
+					log.Println("action end")
+				}
+				break OutCancel
+			}
+
+			//检查report
+			if reportInterval > 0 && (checkCnt%reportInterval == 0) {
+				jsonRes, err := json.Marshal(control)
+				if err != nil {
+					log.Println(err.Error())
+					continue
+				}
+
+				msg := `{"code":202, "message":"success", "data":` + string(jsonRes) + `}`
+				sendChan <- msg //发送统计信息
+			}
+
+			//检查是否需要增加进程
+			if control.WorkTagetCnt > 0 {
+				diffCnt := int(control.WorkTagetCnt - control.WorkCnt) //目标和实际差距
+				if diffCnt > 0 {
+					//增加进程
+					for i := 0; i < diffCnt; i++ {
+						go doWork(control, ctx, tr, i+int(control.WorkTagetCnt), urlChanel, resultChanel, rLog)
+					}
+					control.WorkTagetCnt = 0 //启动完成，标记
+				} else if diffCnt < 0 {
+					//减少进程
+					diffCnt = -diffCnt
+
+					for i := 0; i < diffCnt; i++ {
+						emptyData := runnerHttp.HarRequestType{}
+						emptyData.Seq = -1
+						urlChanel <- emptyData
+					}
+					control.WorkTagetCnt = 0 //可能阻塞,标记
+				}
+			}
+
 		}
 	}
 }
