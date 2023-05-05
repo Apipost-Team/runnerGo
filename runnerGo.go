@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 
 	"github.com/Apipost-Team/runnerGo/request"
 	"golang.org/x/net/websocket"
@@ -36,7 +36,7 @@ func main() {
 	flag.IntVar(&serverPort, "p", 10397, "server port， default：10397")
 	flag.IntVar(&isAutoExit, "a", 0, "is auto exit， default：0")
 	flag.Parse()
-	log.Printf("server port %d and is auto exit %d", serverPort, isAutoExit)
+	fmt.Printf("server port %d and is auto exit %d", serverPort, isAutoExit)
 
 	if isAutoExit > 0 {
 		go delayExit(30) //30s不使用退出
@@ -51,17 +51,17 @@ func main() {
 		//增加代理发送功能
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Println(err)
+			fmt.Println(err)
 			return
 		}
-		log.Println(string(body))
+		fmt.Println(string(body))
 		var p runnerHttp.HarRequestType
 		err = json.Unmarshal(body, &p)
 		if err != nil {
-			log.Println(err)
+			fmt.Println(err)
 			return
 		}
-		log.Println(p)
+		fmt.Println(p)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte("{}"))
 	})
@@ -88,7 +88,7 @@ func main() {
 			}
 		}
 
-		log.Println("websocket is closed", WebsocketCnt)
+		fmt.Println("websocket is closed", WebsocketCnt)
 		if isAutoExit > 0 {
 			//断开，3s后重启
 			go delayExit(3) //30s不使用退出

@@ -73,7 +73,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	//程序错误处理
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("执行任务出错,忽略退出", r)
+			fmt.Println("执行任务出错,忽略退出", r)
 			msg := fmt.Sprintf("\"code\":501, \"message\": \"%q\", \"data\":{\"Target_id\":\"%s\"}}", r, control.Target_id)
 			sendChan <- msg
 		}
@@ -83,7 +83,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 	defer func() {
 		control.IsRunning = false
 		cancelAll() //取消所有任务
-		log.Println("action main quit", *control)
+		fmt.Println("action main quit", *control)
 	}() //设置为执行完成
 
 	//判断是否要创建文本日志
@@ -96,7 +96,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		} else {
 			defer f.Close() //关闭日志
 			rLog = log.New(f, "", log.Ltime)
-			log.Printf("log file:%s", f.Name())
+			fmt.Printf("log file:%s", f.Name())
 		}
 	}
 
@@ -113,7 +113,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		defer func() {
 			close(urlChanel) //关闭请求产生
 			if r := recover(); r != nil {
-				log.Println("error add task", r)
+				fmt.Println("error add task", r)
 			}
 		}()
 
@@ -126,7 +126,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 
 		for i := 0; is_forever || i < control.Total; i++ {
 			if control.IsCancel || (!control.IsRunning) {
-				log.Println("action add task quit")
+				fmt.Println("action add task quit")
 				break
 			}
 
@@ -136,7 +136,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				//log.Printf("send data %d", i)
 			case <-ctx.Done():
 				//防止写入死锁
-				log.Println("action reciver exit")
+				fmt.Println("action reciver exit")
 				return
 			}
 		}
@@ -161,11 +161,11 @@ func doWork(control *tools.ControlData, ctx context.Context, tr *http.Transport,
 	defer func() {
 		if control.WorkCnt < 1 {
 			//最后一个工作进程，清理管道
-			log.Printf("close channel by work %d and workcnt %d", workId, control.WorkCnt)
+			fmt.Printf("close channel by work %d and workcnt %d", workId, control.WorkCnt)
 			close(resultChanel)
 		}
 		if r := recover(); r != nil {
-			log.Println("work error", workId, r)
+			fmt.Println("work error", workId, r)
 		}
 	}()
 
@@ -220,7 +220,7 @@ func doWork(control *tools.ControlData, ctx context.Context, tr *http.Transport,
 func doControl(control *tools.ControlData, ctx context.Context, sendChan chan<- string, tr *http.Transport, urlChanel chan runnerHttp.HarRequestType, resultChanel chan<- summary.Res, rLog *log.Logger) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("error control", r)
+			fmt.Println("error control", r)
 		}
 	}()
 
@@ -235,23 +235,23 @@ func doControl(control *tools.ControlData, ctx context.Context, sendChan chan<- 
 		}
 	}
 
-	log.Println("run timeout", control.MaxRunTime, "reportInterval", reportInterval, "reportTime", control.ReportTime)
+	fmt.Println("run timeout", control.MaxRunTime, "reportInterval", reportInterval, "reportTime", control.ReportTime)
 
 OutCancel:
 	for {
 		select {
 		case <-timeChan:
 			control.IsCancel = true //设置为取消
-			log.Println("action timout")
+			fmt.Println("action timout")
 			break OutCancel
 		case <-time.After(time.Duration(checkInterval) * time.Millisecond):
 			checkCnt++ //检查次数+1
 			//确定退出
 			if control.IsCancel || (!control.IsRunning) { //取消或者支持完成直接退出
 				if control.IsCancel {
-					log.Println("action cancel")
+					fmt.Println("action cancel")
 				} else {
-					log.Println("action end")
+					fmt.Println("action end")
 				}
 				break OutCancel
 			}
@@ -260,7 +260,7 @@ OutCancel:
 			if reportInterval > 0 && (checkCnt%reportInterval == 0) {
 				jsonRes, err := json.Marshal(control)
 				if err != nil {
-					log.Println(err.Error())
+					fmt.Println(err.Error())
 					continue
 				}
 
