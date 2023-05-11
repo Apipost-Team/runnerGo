@@ -27,7 +27,8 @@ type Res struct {
 }
 
 type SummaryData struct {
-	Target_id             string
+	Target_id             string //返回值唯一标识
+	LogFilename           string //错误日志文件路径，默认为空
 	CompleteRequests      int
 	FailedRequests        int
 	SuccessRequests       int
@@ -74,6 +75,7 @@ func HandleRes(control *tools.ControlData, resultChanel <-chan Res) SummaryData 
 			MinUseTime:        float64(control.TimeOut),
 			MinRes:            float64(control.TimeOut),
 			Target_id:         control.Target_id,
+			LogFilename:       control.LogFilename,
 		}
 
 		waitTimes = make([]float64, 0, control.Total)

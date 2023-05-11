@@ -96,6 +96,7 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 		} else {
 			defer f.Close() //关闭日志
 			rLog = log.New(f, "", log.Ltime)
+			control.LogFilename = f.Name() //错误日志文件
 			fmt.Printf("log file:%s", f.Name())
 		}
 	}
