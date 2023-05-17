@@ -238,6 +238,9 @@ func doControl(control *tools.ControlData, ctx context.Context, sendChan chan<- 
 
 	fmt.Println("run timeout", control.MaxRunTime, "reportInterval", reportInterval, "reportTime", control.ReportTime)
 
+	oldControl := *control                      //旧的控制信息
+	var process, qps, speed, spend_time float64 //进度,执行次数,下载速度
+
 OutCancel:
 	for {
 		select {
@@ -259,7 +262,31 @@ OutCancel:
 
 			//检查report
 			if reportInterval > 0 && (checkCnt%reportInterval == 0) {
-				jsonRes, err := json.Marshal(control)
+
+				if control.Total < 1 {
+					//按时间统计进度
+					process = float64(control.EndTime-control.StartTime) / 10e8 / float64(control.MaxRunTime)
+				} else {
+					process = float64(control.Cnt) / float64(control.Total)
+				}
+
+				spend_time = (float64(control.EndTime) - float64(oldControl.EndTime)) / 10e8
+				if spend_time > 0 {
+					qps = float64(control.Cnt-oldControl.Cnt) / spend_time
+					speed = float64(control.Size-oldControl.Size) / 1024 / 1024 / spend_time
+				} else {
+					spend_time = float64(control.EndTime-control.StartTime) / 10e8
+					if spend_time > 0 {
+						qps = float64(control.Cnt) / spend_time
+						speed = float64(control.Size) / 1024 / 1024 / spend_time
+					}
+				}
+
+				reportData := tools.ReportControlData{
+					*control, process, qps, speed,
+				}
+
+				jsonRes, err := json.Marshal(reportData)
 				if err != nil {
 					fmt.Println(err.Error())
 					continue

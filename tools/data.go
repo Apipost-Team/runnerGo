@@ -21,3 +21,10 @@ type ControlData struct {
 	LogType      int     //日志类型 0 关闭， 1开启全量 2仅错误日志
 	LogFilename  string  //错误日志文件路径
 }
+
+type ReportControlData struct {
+	ControlData
+	Process float64 //进度
+	Qps     float64 //执行次数
+	Speed   float64 //下载速度
+}
