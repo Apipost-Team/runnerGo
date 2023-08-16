@@ -25,6 +25,7 @@ Options:
     "target_id":"",
     "report_time":0,
     "log_type":0,
+    "test_data_path":"",
     "data": {
         "method": "POST",
         "url": "http://www.baidu.com",
@@ -107,6 +108,9 @@ Options:
     }
 }
 ```
+
+## 测试数据集合
+test_data_path  指定测试数据
 
 ## demo
 https://runnergo.apipost.cn/  

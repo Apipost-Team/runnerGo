@@ -129,10 +129,11 @@ func ReadAndDo(sendChan chan<- string, ws *websocket.Conn) {
 			MaxRunTime:   bodyStruct.MaxRunTime, //10分钟
 			IsCancel:     false,
 			IsRunning:    false,
-			TimeOut:      20,                    //超时时间
-			LogType:      bodyStruct.LogType,    //是否开启日志
-			ReportTime:   bodyStruct.ReportTime, //是否定时汇报日志
-			WorkTagetCnt: 0,                     //默认设置为0
+			TimeOut:      20,                      //超时时间
+			LogType:      bodyStruct.LogType,      //是否开启日志
+			ReportTime:   bodyStruct.ReportTime,   //是否定时汇报日志
+			WorkTagetCnt: 0,                       //默认设置为0
+			TestDataPath: bodyStruct.TestDataPath, //测试数据路径
 		}
 
 		if control.MaxRunTime < 1 {

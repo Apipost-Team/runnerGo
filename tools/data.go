@@ -20,6 +20,7 @@ type ControlData struct {
 	ReportTime   int     //多久汇报一次执行进度,单位毫秒
 	LogType      int     //日志类型 0 关闭， 1开启全量 2仅错误日志
 	LogFilename  string  //错误日志文件路径
+	TestDataPath string  //测试数据路径
 }
 
 type ReportControlData struct {

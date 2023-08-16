@@ -3,12 +3,14 @@ package worker
 import (
 	"context"
 	"crypto/tls"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -118,6 +120,30 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 			}
 		}()
 
+		has_var := false
+		var test_data_list []map[string]string
+		if len(control.TestDataPath) > 0 {
+			//读取测试数据
+			test_data_list = readCsv(control.TestDataPath)
+		}
+		test_data_len := len(test_data_list)       //测试数据长度
+		empty_test_data := make(map[string]string) //空数据
+
+		//{{变量}} 检查
+		json_str, err := json.Marshal(data)
+		if err != nil {
+			control.IsCancel = true //设置为取消
+			fmt.Println("action add task error", err)
+			return
+		}
+		raw_data_str := string(json_str)
+		pattern := `{{.*?}}`
+		match, _ := regexp.MatchString(pattern, raw_data_str)
+		if match {
+			has_var = true
+		}
+		fmt.Println("has_var", has_var, "test_data_len", test_data_len)
+
 		is_forever := false
 		if control.Total <= 0 && control.MaxRunTime > 0 {
 			is_forever = true //永久执行
@@ -131,7 +157,26 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				break
 			}
 
+			//变量替换逻辑
+			if has_var {
+				//替换变量
+				var new_data_str string
+				if test_data_len < 1 {
+					new_data_str = replaceVariables(raw_data_str, empty_test_data)
+				} else {
+					new_data_str = replaceVariables(raw_data_str, test_data_list[i%test_data_len])
+				}
+
+				err = json.Unmarshal([]byte(new_data_str), &data) //替换变量
+				if err != nil {
+					control.IsCancel = true //设置为取消
+					fmt.Println("data error", err)
+					continue
+				}
+			}
+
 			data.Seq = i //设置请求序列
+
 			select {
 			case urlChanel <- data:
 				//log.Printf("send data %d", i)
@@ -329,4 +374,51 @@ func Request(p runnerHttp.HarRequestType) {
 	// }
 
 	//result, err := runnerHttp.Do(client, p)
+}
+
+func replaceVariables(input string, data map[string]string) string {
+	// 正则表达式，匹配 {{variable}} 格式的变量,然后通过map中数据替换
+	re := regexp.MustCompile(`{{(.*?)}}`)
+	output := re.ReplaceAllStringFunc(input, func(match string) string {
+		key := match[2 : len(match)-2] // 移除{{}}包围的变量名
+		value, exists := data[key]
+		if exists {
+			return value
+		}
+		return "" // 如果变量名不存在于map中，则替换为空字符串
+	})
+	return output
+}
+
+func readCsv(path string) []map[string]string {
+	//读取csv文件
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println("Failed to open CSV file:", err)
+		return nil
+	}
+	defer file.Close()
+
+	// 创建 CSV 读取器
+	reader := csv.NewReader(file)
+
+	// 读取 CSV 数据
+	records, err := reader.ReadAll()
+	if err != nil {
+		fmt.Println("Failed to read CSV data:", err)
+		return nil
+	}
+
+	// 将 CSV 数据转换为 []map[string]string
+	var data []map[string]string
+	headers := records[0]
+	for _, record := range records[1:] {
+		row := make(map[string]string)
+		for i, value := range record {
+			row[headers[i]] = value
+		}
+		data = append(data, row)
+	}
+
+	return data
 }
