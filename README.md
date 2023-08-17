@@ -110,7 +110,12 @@ Options:
 ```
 
 ## 测试数据集合
-test_data_path  指定测试数据
+test_data_path  指定测试数据  
+内置一下默认变量
+ - {{$index}}  当前请求序号，递增
+ - {{$time}}  当前请求unix时间戳，会重复
+ - {{$random}}  1000000000以内随机数
+ - {{$uuid}}  uuid
 
 ## demo
 https://runnergo.apipost.cn/  

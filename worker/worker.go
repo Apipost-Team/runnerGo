@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -19,6 +20,10 @@ import (
 	"github.com/Apipost-Team/runnerGo/summary"
 	"github.com/Apipost-Team/runnerGo/tools"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 type NullWriter int
 
@@ -162,9 +167,9 @@ func Process(control *tools.ControlData, data runnerHttp.HarRequestType, sendCha
 				//替换变量
 				var new_data_str string
 				if test_data_len < 1 {
-					new_data_str = replaceVariables(raw_data_str, empty_test_data)
+					new_data_str = replaceVariables(raw_data_str, empty_test_data, i)
 				} else {
-					new_data_str = replaceVariables(raw_data_str, test_data_list[i%test_data_len])
+					new_data_str = replaceVariables(raw_data_str, test_data_list[i%test_data_len], i)
 				}
 
 				err = json.Unmarshal([]byte(new_data_str), &data) //替换变量
@@ -376,7 +381,7 @@ func Request(p runnerHttp.HarRequestType) {
 	//result, err := runnerHttp.Do(client, p)
 }
 
-func replaceVariables(input string, data map[string]string) string {
+func replaceVariables(input string, data map[string]string, index int) string {
 	// 正则表达式，匹配 {{variable}} 格式的变量,然后通过map中数据替换
 	re := regexp.MustCompile(`{{(.*?)}}`)
 	output := re.ReplaceAllStringFunc(input, func(match string) string {
@@ -384,6 +389,24 @@ func replaceVariables(input string, data map[string]string) string {
 		value, exists := data[key]
 		if exists {
 			return value
+		}
+		//key以$开头
+		if key[0] == '$' {
+			//判断是否命中指定函数
+			switch key {
+			case "$index":
+				//获取一个随机数
+				return fmt.Sprintf("%d", index)
+			case "$time":
+				//获取当前时间
+				return fmt.Sprintf("%d", time.Now().Unix())
+			case "$random":
+				//返回一个随机数
+				return fmt.Sprintf("%d", rand.Intn(1000000000))
+			case "$uuid":
+				return generateUUID()
+
+			}
 		}
 		return "" // 如果变量名不存在于map中，则替换为空字符串
 	})
@@ -421,4 +444,19 @@ func readCsv(path string) []map[string]string {
 	}
 
 	return data
+}
+
+func generateUUID() string {
+	chars := "0123456789abcdef"
+	uuid := make([]byte, 36)
+
+	for i := 0; i < 36; i++ {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			uuid[i] = '-'
+		} else {
+			uuid[i] = chars[rand.Intn(len(chars))]
+		}
+	}
+
+	return string(uuid)
 }
