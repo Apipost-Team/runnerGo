@@ -11,18 +11,18 @@ import (
 
 	"github.com/Apipost-Team/runnerGo/tools"
 	"github.com/Apipost-Team/runnerGo/worker"
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 var urlsBlacklist = []string{".apis.cloud", ".apipost.cn", ".apipost.com", ".apipost.net", ".runnergo.com", ".runnergo.cn", ".runnergo.net"}
 
-func ReadAndDo(sendChan chan<- string, ws *websocket.Conn) {
+func ReadAndDo(sendChan chan<- string, conn *websocket.Conn) {
 	defer close(sendChan) //退出必须关闭，迫使其他也退出
 
 	var controlMap = make(map[string]*tools.ControlData)
 	for {
-		var body string
-		if err := websocket.Message.Receive(ws, &body); err != nil {
+		messageType, message, err := conn.ReadMessage()
+		if err != nil {
 			fmt.Println("read error")
 			fmt.Println(err)
 			for _, control := range controlMap {
@@ -30,9 +30,15 @@ func ReadAndDo(sendChan chan<- string, ws *websocket.Conn) {
 					control.IsCancel = true //主动设置为取消
 				}
 			}
-			ws.Close()
 			break
 		}
+
+		if messageType != websocket.TextMessage {
+			fmt.Println("messagetype:", messageType)
+			continue
+		}
+		body := string(message)
+
 		//fmt.Println("Received: ", body)
 		if strings.HasPrefix(body, "PING") || strings.HasPrefix(body, "ping") {
 			//处理ping
@@ -81,6 +87,7 @@ func ReadAndDo(sendChan chan<- string, ws *websocket.Conn) {
 
 		if strings.HasPrefix(body, "quit") {
 			//退出
+			fmt.Print("user quit")
 			os.Exit(0)
 		}
 

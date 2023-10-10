@@ -15,7 +15,7 @@ import (
 	//_ "net/http/pprof"
 
 	"github.com/Apipost-Team/runnerGo/request"
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 
 	runnerHttp "github.com/Apipost-Team/runnerGo/http"
 )
@@ -29,7 +29,21 @@ func delayExit(delay time.Duration) {
 	}
 }
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("发生错误:", err)
+		}
+	}()
+
 	var serverPort int
 	var isAutoExit int
 
@@ -65,23 +79,36 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte("{}"))
 	})
-	http.Handle("/websocket", websocket.Handler(func(ws *websocket.Conn) {
+	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
+		// 升级HTTP连接为WebSocket连接
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer conn.Close()
+
+		//记录客户端数量
 		atomic.AddInt32(&WebsocketCnt, 1)
 		defer func() {
 			atomic.AddInt32(&WebsocketCnt, -1) //连接数减少
 		}()
 
-		var sendChan = make(chan string)
-		defer ws.Close()
+		fmt.Println("conn:", WebsocketCnt)
+		defer func() {
+			fmt.Println("close:", WebsocketCnt)
+		}()
 
-		go request.ReadAndDo(sendChan, ws) //读取并执行命令
+		var sendChan = make(chan string)
+
+		go request.ReadAndDo(sendChan, conn) //读取并执行命令
 
 		for {
 			msg, ok := <-sendChan
 			if !ok {
 				break
 			}
-			if err := websocket.Message.Send(ws, msg); err != nil {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 				fmt.Println("write")
 				fmt.Println(err)
 				break
@@ -93,8 +120,7 @@ func main() {
 			//断开，3s后重启
 			go delayExit(3) //30s不使用退出
 		}
-
-	}))
+	})
 
 	if err := http.ListenAndServe(":"+strconv.Itoa(serverPort), nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
