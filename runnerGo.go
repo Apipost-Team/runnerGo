@@ -24,7 +24,7 @@ var WebsocketCnt int32 = 0 //连接数量
 func delayExit(delay time.Duration) {
 	time.Sleep(delay * time.Second)
 	if WebsocketCnt < 1 {
-		log.Println("free too loog, exit")
+		log.Println("free too long, exit")
 		os.Exit(0)
 	}
 }
